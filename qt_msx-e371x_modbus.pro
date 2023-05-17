@@ -28,10 +28,12 @@ SOURCES += \
     common_modbus_clientlib.c \
     complex_number.cpp \
     configuration.cpp \
+    controller.cpp \
     curve_grap_show.cpp \
     fft.cpp \
     formdoc.cpp \
     function_key.cpp \
+    get_msxe3711_data.cpp \
     histogram.cpp \
     identify_area_attributes.cpp \
     main.cpp \
@@ -47,7 +49,6 @@ SOURCES += \
     property_of_curve.cpp \
     qcustomplot.cpp \
     result_area_attribute.cpp \
-    start_measuring_the_thread.cpp \
     statistical_report.cpp \
     time.c
 
@@ -63,11 +64,13 @@ HEADERS += \
     common_modbus_clientlib.h \
     complex_number.h \
     configuration.h \
+    controller.h \
     curve_grap_show.h \
     fft.h \
     formdoc.h \
     function_key.h \
     get_data_for_msx3711.h \
+    get_msxe3711_data.h \
     get_polar_data.h \
     histogram.h \
     identify_area_attributes.h \
@@ -83,7 +86,6 @@ HEADERS += \
     property_of_curve.h \
     qcustomplot.h \
     result_area_attribute.h \
-    start_measuring_the_thread.h \
     statistical_report.h \
     stdint_compat.h
 

@@ -28,7 +28,7 @@
 #include "calibration.h"
 #include <string>
 #include "function_key.h"
-#include "start_measuring_the_thread.h"
+
 #include <thread>
 
 #ifdef _WIN32
@@ -47,30 +47,109 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    connectingDevice();//开始连接
+    qRegisterMetaType<struct modbus>("struct modbus");
 
-    QTimer *timer_calendar;
-    timer_calendar=new QTimer(this);
-    //    std::shared_ptr<QTimer> timer_calendar=std::make_shared<QTimer>(this);
-    connect(timer_calendar,SIGNAL(timeout()),this,SLOT(show_time()));
-    timer_calendar->start(1000);
+    real_time_=std::make_unique<QTimer>(this);
+    connect(real_time_.get(),SIGNAL(timeout()),this,SLOT(show_time()));
+    real_time_->start(1000);
+
+    initStatusBar();//初始化状态栏
+
+    initFunctionKey();//初始化功能键栏
+//    show_time_label_=new QLabel(this);      //状态栏显示时间
+//    show_part_count_label_=new QLabel(this);//状态栏显示计件数
+//    show_connect_information_=new QLabel(this);//状态栏显示连接状态
 
 
+//    show_connect_information_=std::make_unique<QLabel>(this);
+//    show_part_count_label_=std::make_unique<QLabel>(this);//状态栏显示计件数
+//    show_part_count_label_->setText("n= 0 ");
+//    ui->statusbar->addPermanentWidget(show_part_count_label_.get());
+//    ui->statusbar->addPermanentWidget(show_connect_information_.get());
 
-    show_time_label_=new QLabel(this);      //状态栏显示时间
-    show_part_count_label_=new QLabel(this);//状态栏显示计件数
-    show_connect_information_=new QLabel(this);//状态栏显示连接状态
+//    if(config_polar_plot_==nullptr)
+//    {
+//           config_polar_plot_=std::make_unique<PolarPlotShow>();   //默认显示极图页面
+//    }
+
+//    ui->verticalLayout->addWidget(config_polar_plot_.get());
+
+//    //功能键
+//    if(function_key_==nullptr)
+//    {
+//        function_key_=std::make_unique<function_key>();
+//        connect(function_key_.get(),SIGNAL(signal_F9()),this,SLOT(on_start_measuring_triggered()));
+//        connect(function_key_.get(),SIGNAL(signal_config_F8()),this,SLOT(configurePopover()));
+//        connect(function_key_.get(),SIGNAL(signal_pole_diagram_F5()),this,SLOT(pole_diagram_pushButton_clicked()));
+//        connect(function_key_.get(),SIGNAL(signal_graph_F6()),this,SLOT( graph_pushButton_clicked()));
+//        connect(function_key_.get(),SIGNAL(signal_F3()),this,SLOT(configuration_Button_clicked()));
+//        connect(function_key_.get(),SIGNAL(signal_F4()),this,SLOT(pushButton_4_clicked()));
+//        connect(function_key_.get(),SIGNAL(signal_F10()),this,SLOT(pushButton_10_clicked()));
+//    }
+
+//    ui->horizontalLayout->addWidget(function_key_.get());
+
+//    //F6
+//    config_graph_=std::make_unique<new_profile>();
+
+//    ui->verticalLayout->addWidget(config_graph_.get());
+
+//    config_graph_->hide();
+
+//    //统计报告
+//    if(report_==nullptr)
+//    {
+//      report_=std::make_unique<statistical_report>();
+//    }
+//    ui->verticalLayout->addWidget(report_.get());
+//    report_->hide();
 
 
+////    connect(ui->connect_pushButton,&QPushButton::clicked,this,&MainWindow::on_start_measuring_triggered);
+
+////    displacement_data_.push_back(0);
+
+//    //    config_polar_plot_->maindowThreadData(displacement_data_);
+//    if (config_configure_ == nullptr)//配置
+//    {
+//      config_configure_=std::make_unique<configuration>();
+//      connect(config_configure_.get(), SIGNAL(signalResultAreaArribute(QVector<table_config>)), config_polar_plot_.get(), SLOT(reciveResultAreaAttribute_(QVector<table_config>)));
+//      connect(config_configure_.get(), SIGNAL(signal_recognition_config(recognition_config)), config_polar_plot_.get(), SLOT(recive_recogntion_config(recognition_config)));
+//    }
+
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::show_time()
+{
+    QDateTime time = QDateTime::currentDateTime();
+    QString str = time.toString("yyyy-MM-dd hh:mm:ss dddd");
+
+    show_time_label_=std::make_unique<QLabel>(this);
+
+    show_time_label_->setText(str);
+
+    ui->statusbar->addPermanentWidget(show_time_label_.get());
+    ui->statusbar->setSizeGripEnabled(true);
+
+}
+
+//初始化状态栏
+void MainWindow::initStatusBar()
+{
+    show_part_count_label_=std::make_unique<QLabel>(this);//状态栏显示计件数
     show_part_count_label_->setText("n= 0 ");
-    ui->statusbar->addPermanentWidget(show_part_count_label_);
-    ui->statusbar->addPermanentWidget(show_connect_information_);
+    ui->statusbar->addPermanentWidget(show_part_count_label_.get());
+}
 
-    if(config_polar_plot_==nullptr)
-    {
-           config_polar_plot_=std::make_unique<PolarPlotShow>();   //默认显示极图页面
-    }
-
+//初始化功能键栏
+void MainWindow::initFunctionKey()
+{
+    //功能键栏
     if(function_key_==nullptr)
     {
         function_key_=std::make_unique<function_key>();
@@ -85,52 +164,38 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->horizontalLayout->addWidget(function_key_.get());
 
-
+    //默认显示极图页面 F5 (在主页面显示)
+    if(config_polar_plot_==nullptr)
+    {
+         config_polar_plot_=std::make_unique<PolarPlotShow>();
+    }
     ui->verticalLayout->addWidget(config_polar_plot_.get());
+    config_polar_plot_->show();
 
+    //配置 F3
+    if (config_configure_ == nullptr)
+    {
+      config_configure_=std::make_unique<configuration>();
+      connect(config_configure_.get(), SIGNAL(signalResultAreaArribute(QVector<table_config>)), config_polar_plot_.get(), SLOT(reciveResultAreaAttribute_(QVector<table_config>)));
+      connect(config_configure_.get(), SIGNAL(signal_recognition_config(recognition_config)), config_polar_plot_.get(), SLOT(recive_recogntion_config(recognition_config)));
+    }
 
-    config_graph_=std::make_shared<new_profile>();
-
-    ui->verticalLayout->addWidget(config_graph_.get());
-
-    config_graph_->hide();
-
+    // F4 统计报告 (在主页面显示)
     if(report_==nullptr)
     {
       report_=std::make_unique<statistical_report>();
     }
-
-
     ui->verticalLayout->addWidget(report_.get());
-
     report_->hide();
 
-
-//    connect(ui->connect_pushButton,&QPushButton::clicked,this,&MainWindow::on_start_measuring_triggered);
-
-    displacement_data_.push_back(0);
-
-    //    config_polar_plot_->maindowThreadData(displacement_data_);
-    if (config_configure_ == nullptr)
+    //光谱图 F6 (在主页面显示)
+    if(config_graph_==nullptr)
     {
-
-      config_configure_=std::make_unique<configuration>();
-      connect(config_configure_.get(), SIGNAL(signalResultAreaArribute(QVector<table_config>)), config_polar_plot_.get(), SLOT(reciveResultAreaAttribute_(QVector<table_config>)));
-      connect(config_configure_.get(), SIGNAL(signal_recognition_config(recognition_config)), config_polar_plot_.get(), SLOT(recive_recogntion_config(recognition_config)));
-
+        config_graph_=std::make_unique<new_profile>();
     }
+    ui->verticalLayout->addWidget(config_graph_.get());
+    config_graph_->hide();
 
-//    start_measuring_the_thread* start_=new start_measuring_the_thread();
-//    QThread thread_;
-//    start_->moveToThread(&thread_);
-//    thread_.start();
-
-
-}
-
-MainWindow::~MainWindow()
-{
-    delete ui;
 }
 
 void MainWindow::windowtitle(QString title)
@@ -138,413 +203,101 @@ void MainWindow::windowtitle(QString title)
     setWindowTitle("波纹度仪");//标题栏
 }
 
-uint32_t TRANSDUCER_SELECTION = 0;
-
-int MainWindow::sampleMX371xTransducerGetAutoRefreshValuesEx(struct modbus * modbus, int NumberOfChannels)
-{
-    struct MX371x__TransducerGetAutoRefreshValuesEx_parameters_t Response;
-    int ret = 0;
-
-    memset(&Response,0,sizeof(Response));
-
-    ret = modbus_call_MX371x__TransducerGetAutoRefreshValuesEx(modbus,&Response);
-
-    if (!handle_result_of_FC3_query(modbus, ret, "modbus_call_MX371x__TransducerGetAutoRefreshValuesEx"))
-    {
-        int i;
-
-        for (i=1;i<=NumberOfChannels;i++)
-        {
-            ui->label_4->setNum((*((float*)&Response.Value[i]))*1000.0);
-
-            displacement_data_.push_back((*((float*)&Response.Value[i]))*1000.0);
-
-        }
-        return 0;
-    }
-    return -1;
-}
-
-int MainWindow::sampleMX371xTransducerInitAndStartAutoRefreshEx(struct modbus * modbus)
-{
-    struct GetLastCommandStatus_parameters_t CommandStatus;
-    int ret = 0;
-
-    std::stringstream channelmask_dec;
-    int channel_num;
-
-    uint32_t TransducerSelection = TRANSDUCER_SELECTION;
-    uint32_t ChannelMask = 0x1;  //通道
-    uint32_t AverageMode = 0;
-    uint32_t AverageValue = 0;
-    uint32_t TriggerMask = 0;
-    uint32_t TriggerMode = 0;
-    uint16_t HardwareTriggerCount = 0;
-    uint16_t HardwareTriggerEdge = 0;
-    uint32_t ByTriggerNbrOfSeqToAcquire = 1;
-    uint32_t DataFormat = 3;
-    uint32_t Option1 = 0;
-    uint32_t Option2 = 0;
-    uint32_t Option3 = 0;
-    uint32_t Option4 = 0;
-
-    channelmask_dec<<ChannelMask;  //0x转 dec
-    channelmask_dec>>channel_num;
-
-    QString str="T"+QString::number(channel_num);
-    ui->transducer_label->setText(str);
-
-    ret = modbus_call_MX371x__TransducerInitAndStartAutoRefreshEx(modbus,TransducerSelection,ChannelMask,AverageMode,AverageValue,TriggerMask,TriggerMode,HardwareTriggerEdge,HardwareTriggerCount,ByTriggerNbrOfSeqToAcquire,DataFormat,Option1,Option2,Option3,Option4,&CommandStatus);
-
-    return handle_result_of_FC16_query(modbus, &CommandStatus, ret, "modbus_call_MX371x__TransducerInitAndStartAutoRefreshEx");
-}
-
-int MainWindow::sampleMX371xTransducerStopAndReleaseAutoRefreshEx(struct modbus * modbus)
-{
-    struct GetLastCommandStatus_parameters_t CommandStatus;
-    int ret = 0;
-    uint32_t Dummy = 0;
-
-    ret = modbus_call_MX371x__TransducerStopAndReleaseAutoRefreshEx(modbus,Dummy,&CommandStatus);
-
-    return handle_result_of_FC16_query(modbus, &CommandStatus, ret, "modbus_call_MX371x__TransducerStopAndReleaseAutoRefreshEx");
-}
-
-const char * MainWindow::typestr(uint32_t type)
-{
-    switch (type)
-    {
-    case 0:
-        return "half-bridge";
-    case 1:
-        return "LVDT";
-    case 2:
-        return "Knaebel";
-    case 3:
-        return "half-bridge Mahr";
-    case 4:
-        return "LVDT Mahr";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-int MainWindow::sampleMX371xTransducerGetNbrOfTypeEx(struct modbus * modbus, uint32_t* NumberOfTransducerTypes)
-{
-    struct MX371x__TransducerGetNbrOfTypeEx_parameters_t Response;
-    int ret = 0;
-
-    memset(&Response,0,sizeof(Response));
-
-    ret = modbus_call_MX371x__TransducerGetNbrOfTypeEx(modbus,&Response);
-
-    if (handle_result_of_FC3_query(modbus, ret, "modbus_call_MX371x__TransducerGetNbrOfTypeEx"))
-        return -1;
-
-    *NumberOfTransducerTypes = Response.NumberOfTransducerTypes;
-
-    return 0;
-}
-
-int MainWindow::sampleMX371xGetTransducerDatabaseCursorEx(struct modbus * modbus, uint32_t* TransducerDatabaseCursor)
-{
-    struct MX371x__GetTransducerDatabaseCursorEx_parameters_t Response;
-    int ret = 0;
-
-    memset(&Response,0,sizeof(Response));
-
-    ret = modbus_call_MX371x__GetTransducerDatabaseCursorEx(modbus,&Response);
-
-    if (handle_result_of_FC3_query(modbus, ret, "modbus_call_MX371x__GetTransducerDatabaseCursorEx"))
-        return -1;
-
-    *TransducerDatabaseCursor = Response.TransducerDatabaseCursor;
-
-    return 0;
-}
-
-int MainWindow::sampleMX371xTransducerGetTypeInformationEx(struct modbus * modbus, struct MX371x__TransducerGetTypeInformationEx_parameters_t* TransducerGetTypeInformation)
-{
-    struct MX371x__TransducerGetTypeInformationEx_parameters_t Response;
-    int ret = 0;
-
-    memset(&Response,0,sizeof(Response));
-
-    ret = modbus_call_MX371x__TransducerGetTypeInformationEx(modbus,&Response);
-
-    if (handle_result_of_FC3_query(modbus, ret, "modbus_call_MX371x__TransducerGetTypeInformationEx"))
-        return -1;
-
-    memcpy(TransducerGetTypeInformation, &Response, sizeof(struct MX371x__TransducerGetTypeInformationEx_parameters_t));
-
-    return 0;
-}
-
-int MainWindow::sampleMX371xSetTransducerDatabaseCursorEx(struct modbus * modbus, uint32_t new_)
-{
-    struct GetLastCommandStatus_parameters_t CommandStatus;
-    int ret = 0;
-
-    ret = modbus_call_MX371x__SetTransducerDatabaseCursorEx(modbus, new_, &CommandStatus);
-
-    return handle_result_of_FC16_query(modbus, &CommandStatus, ret, "modbus_call_MX371x__SetTransducerDatabaseCursorEx");
-}
-
-//计数器---------------------------------------------------------------------------------
-int MainWindow::sample_MSXE371x__IncCounterInit(struct modbus * modbus)
-{
-    struct GetLastCommandStatus_parameters_t CommandStatus;
-    int ret = 0;
-
-    uint32_t ulCounterMode = 0x1;
-    uint32_t ulCounterOption = 0;
-    uint32_t ulOption01 = 0;
-    uint32_t ulOption02 = 0;
-    uint32_t ulOption03 = 0;
-    uint32_t ulOption04 = 0;
-
-    /* Remote function call */
-    ret = modbus_call_MSXE371x__IncCounterInit(modbus,ulCounterMode,ulCounterOption,ulOption01,ulOption02,ulOption03,ulOption04,&CommandStatus);
-
-    /* Return value check */
-    return handle_result_of_FC16_query(modbus, &CommandStatus, ret, "modbus_call_MSXE371x__IncCounterInit");
-}
-
-//---------------------------------------------------------------------------------
-int MainWindow::sample_MSXE371x__IncCounterClear(struct modbus * modbus)
-{
-    struct GetLastCommandStatus_parameters_t CommandStatus;
-    int ret = 0;
-
-    /* Remote function call */
-    ret = modbus_call_MSXE371x__IncCounterClear(modbus, 0, &CommandStatus);
-
-    /* Return value check */
-    return handle_result_of_FC16_query(modbus, &CommandStatus, ret, "modbus_call_MSXE371x__IncCounterClear");
-}
-
-int MainWindow::sample_MSXE371x__IncCounterWrite32BitValue(struct modbus * modbus)
-{
-    struct GetLastCommandStatus_parameters_t CommandStatus;
-    int ret = 0;
-
-    uint32_t ulCounterValue = 1000;
-
-    /* Remote function call */
-    ret = modbus_call_MSXE371x__IncCounterWrite32BitValue(modbus, ulCounterValue, &CommandStatus);
-
-    /* Return value check */
-    return handle_result_of_FC16_query(modbus, &CommandStatus, ret, "modbus_call_MSXE371x__IncCounterWrite32BitValue");
-}
-
-int MainWindow::sample_MSXE371x__IncCounterRead32BitsValue(struct modbus * modbus, uint32_t *pulValue, uint32_t *pulTimeStampLow, uint32_t *pulTimeStampHigh)
-{
-    struct MSXE371x__IncCounterRead32BitValue_parameters_t Response;
-    int ret = 0;
-
-    memset(&Response,0,sizeof(Response));
-
-    ret = modbus_call_MSXE371x__IncCounterRead32BitValue(modbus,&Response);
-
-    if (handle_result_of_FC3_query(modbus, ret, "modbus_call_MSXE371x__IncCounterRead0"))
-    {
-        return -1;
-    }
-
-    *pulValue         = Response.ulValue;
-    *pulTimeStampLow  = Response.ulTimeStampLow;
-    *pulTimeStampHigh = Response.ulTimeStampHigh;
-
-    printf("Counter/position: %d\n",*pulValue);
-    printf("Time stamp low  : %u\n", *pulTimeStampLow);
-    printf("Time stamp high : %u\n", *pulTimeStampHigh);
-
-    return 0;
-}
-
-int MainWindow::sample_MSXE371x__IncCounterRelease(struct modbus * modbus)
-{
-    struct GetLastCommandStatus_parameters_t CommandStatus;
-    int ret = 0;
-
-    /* Remote function call */
-    ret = modbus_call_MSXE371x__IncCounterRelease(modbus, 0, &CommandStatus);
-
-    /* Return value check */
-    return handle_result_of_FC16_query(modbus, &CommandStatus, ret, "modbus_call_MSXE371x__IncCounterRelease");
-}
-
-
-/* prints the content of the transducer database on STDOUT */
-int MainWindow::dumpTransducerDatabase(struct modbus * modbus)
-{
-    uint32_t NumberOfTransducerTypes = 0;
-    int      ret                     = 0;
-
-    ret =  sampleMX371xTransducerGetNbrOfTypeEx(modbus, &NumberOfTransducerTypes);
-
-    /* Go through the transducer database */
-    {
-        unsigned int i;
-        for (i=0; i<NumberOfTransducerTypes; i++)
-        {
-            uint32_t TransducerDatabaseCursor = 0;
-            struct MX371x__TransducerGetTypeInformationEx_parameters_t TransducerGetTypeInformation;
-
-            ret =  sampleMX371xSetTransducerDatabaseCursorEx(modbus, i);
-
-            ret =  sampleMX371xGetTransducerDatabaseCursorEx(modbus, &TransducerDatabaseCursor);
-
-            if (i != TransducerDatabaseCursor)
-            {
-                return -1;
-            }
-
-            ret =  sampleMX371xTransducerGetTypeInformationEx(modbus, &TransducerGetTypeInformation);
-
-
-
-            transducer_name_=QString::fromUtf8(reinterpret_cast<const char*>(TransducerGetTypeInformation.Name),sizeof(TransducerGetTypeInformation.Name));
-
-//            memcpy(&s,&TransducerGetTypeInformation.Name,100);
-            qDebug()<<"name :"<<transducer_name_;
-
-            if (i == 0)
-                TRANSDUCER_SELECTION = TransducerGetTypeInformation.SelectionIndex;
-        }
-    }
-    return 0;
-}
-
-//连接
-void MainWindow::connectingDevice()
-{
-    modbus_init(&modbus_);
-
-    switch (modbus_connect(&modbus_, k_ip, SOCK_STREAM, k_port))
-    {
-    case 0:
-        ui->statusbar->clearMessage();
-        ui->statusbar->showMessage("连接成功");
-        break;
-    case -1:
-        addidata_network_perror("modbus_connect");
-        ui->statusbar->clearMessage();
-        ui->statusbar->showMessage("连接失败");
-        break;
-    case -2:
-        ui->statusbar->clearMessage();
-        ui->statusbar->showMessage("modbus_connect: incorrect parameter");
-
-        break;
-    case -3:
-        ui->statusbar->clearMessage();
-        ui->statusbar->showMessage("incorrect address");
-
-        break;
-    default:
-        ui->statusbar->clearMessage();
-        ui->statusbar->showMessage("连接失败");
-        break;
-    }
-     dumpTransducerDatabase(&modbus_);
-
-}
-
-void MainWindow::threadGetMSXdata()
-{
-
-}
 //按下按钮 开始测量
 void MainWindow::on_start_measuring_triggered()
 {
-    uint32_t 	  ulChannelNumber      = 0;
-    int           ret                  = -1;
 
-    displacement_data_.clear();
-
-
-
-
-//    dumpTransducerDatabase(&modbus_);
-
-    int i = 0;
-
-    sampleMX371xTransducerInitAndStartAutoRefreshEx(&modbus_);
-
-    for (i=0;i<k_measurement_point;i++)
+//    controller* controller_=new controller();
+    if(controller_==nullptr)
     {
-        sampleMX371xTransducerGetAutoRefreshValuesEx(&modbus_,1);
+        controller_=std::make_unique<controller>();
+        connect(controller_.get(),&controller::signal_msx_data,this,&MainWindow::recive_msxe3711_data);
     }
 
-    sampleMX371xTransducerStopAndReleaseAutoRefreshEx(&modbus_);
+    emit controller_->operate_msx_data();
 
-    QString range=ui->comboBox_2->currentText();
+    loadingMeasurement();//加载中
 
-    config_polar_plot_->maindowThreadData(displacement_data_,range);
+//    displacement_data_.clear();
 
-    part_count_++;
+
+//    QString range=ui->comboBox_2->currentText();
+
+//    config_polar_plot_->maindowThreadData(displacement_data_,range);
+
+    part_count_++;//计件数
 
     QString part_str_="n= "+QString::number(part_count_);
     show_part_count_label_->setText(part_str_);
+
+}
+
+void MainWindow::loadingMeasurement()
+{
+    // show delay dialog
+    delay_dialog_ = std::make_unique<QDialog>(this);
+    delay_dialog_->setFixedSize(150, 150);
+    delay_dialog_->setAttribute(Qt::WA_TranslucentBackground);
+    delay_dialog_->setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+
+    delay_label_ = std::make_unique<QLabel>(delay_dialog_.get());
+    delay_label_->setStyleSheet("background-color:transparent");
+    delay_label_->resize(150, 150);
+    delay_label_->setScaledContents(true);
+
+    delay_movie_ = std::make_unique<QMovie>("C:/Users/gaohuan/Desktop/qt_waviness/qt_msx-e371x_modbus_qwt/images/waiting.gif");
+    delay_movie_->setCacheMode(QMovie::CacheAll);
+    delay_label_->setMovie(delay_movie_.get());
+
+    delay_movie_->start();
+    delay_dialog_->exec();
+}
+
+void MainWindow::recive_msxe3711_data(QVector<double> data)
+{
+    qDebug()<<"recive_msxe3711_data!\n";
+
+
+    QString range=ui->comboBox_2->currentText();
+
+    config_polar_plot_->maindowThreadData(data,"2000");
+
     config_polar_plot_->theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCriteria(config_configure_.get()->tab_band_);
 
     report_->tableWidgetAddData(config_polar_plot_->vec_tab_config);
     report_->recognition_data(config_polar_plot_->widget_config_);
+
+    finishedMeasurement();
 }
 
-void MainWindow::counterInput()
+void MainWindow::finishedMeasurement()
 {
-    int i = 0;
-    uint32_t      ulValue              = 0;
-    uint32_t      ulTimeStampLow       = 0;
-    uint32_t      ulTimeStampHigh      = 0;
+    if(delay_movie_)
+    {
+        delay_movie_->stop();
+        delay_movie_.reset(nullptr);
+    }
 
-        /* Counter sample */
-        if (sample_MSXE371x__IncCounterInit(&modbus_) != 0)
-            { qDebug()<<"sample_MSXE371x__IncCounterInit error\n";  }
+    if(delay_dialog_)
+    {
+        delay_dialog_->close();
+        delay_movie_.reset(nullptr);
+    }
 
-        if (sample_MSXE371x__IncCounterClear(&modbus_) != 0)
-            { qDebug()<<"sample_MSXE371x__IncCounterClear error\n";  }
-
-        if (sample_MSXE371x__IncCounterWrite32BitValue(&modbus_) != 0)
-            { qDebug()<<"sample_MSXE371x__IncCounterWrite32BitValue error\n";}
-
-        for (i=0;i<100;i++)
-        {
-            if (sample_MSXE371x__IncCounterRead32BitsValue(&modbus_, &ulValue, &ulTimeStampLow, &ulTimeStampHigh) != 0)
-                { qDebug()<<"sample_MSXE371x__IncCounterRead32BitsValue error\n";  }
-#ifdef WIN32
-                sleep (100);
-#else
-                sleep(1);
-#endif
-                printf("\n");
-        }
-
-        if (sample_MSXE371x__IncCounterRelease(&modbus_) != 0)
-            { qDebug()<<"sample_MSXE371x__IncCounterRelease error\n"; }
+    if(delay_label_)
+    {
+        delay_label_.reset(nullptr);
+    }
 }
 
-
-void MainWindow::show_time()
+//F4
+void MainWindow::pushButton_4_clicked()
 {
-    QDateTime time = QDateTime::currentDateTime();
-    QString str = time.toString("yyyy-MM-dd hh:mm:ss dddd");
-
-    show_time_label_->setText(str);
-
-    ui->statusbar->addPermanentWidget(show_time_label_);
-    ui->statusbar->setSizeGripEnabled(true);
-
-}
-
-//F6
-void MainWindow::graph_pushButton_clicked()
-{
-    config_graph_->show();
-    report_->hide();
     config_polar_plot_->hide();
+
+    config_graph_->hide();
+
+    report_->show();
 }
 
 //F5
@@ -558,14 +311,12 @@ void MainWindow::pole_diagram_pushButton_clicked()
 
 }
 
-//F4
-void MainWindow::pushButton_4_clicked()
+//F6
+void MainWindow::graph_pushButton_clicked()
 {
+    config_graph_->show();
+    report_->hide();
     config_polar_plot_->hide();
-
-    config_graph_->hide();
-
-    report_->show();
 }
 
 //文件-》新建-》配置-》保存并出现弹窗
@@ -659,28 +410,9 @@ void MainWindow::on_new_profile_triggered()
         qDebug() << settings->value("Criterias/ClassNames");
 
 
-
-        //
-//        QFile file("C://Users//gaohuan//Desktop//qt_waviness//filename.ini");
-//        bool ok_ = file.rename("C://Users//gaohuan//Desktop//qt_waviness//filename.mwa");
-
-
-        //因为QFile::rename()也是个静态方法,可以直接调用.返回值非常重要,是用来判断是否成功操作的.
-        //                QFile file_("C://Users//gaohuan//Desktop//qt_waviness//filename.ini");
-        //                file_.remove();
-        //              bool ok = QFile::remove("C://Users//gaohuan//Desktop//qt_waviness//filename.ini");
-
-        //删除文件.返回一个bool值,判断是否成功删除,如果路径不存在这些,则返回false.
-        //              QFile file_("C://Users//gaohuan//Desktop//qt_waviness//filename.ini");
-        //              bool ok = file_.remove();
-        //              //因为QFile::remove()是个静态方法,可以直接调用.
-        //              bool ok_t = QFile::remove("C://Users//gaohuan//Desktop//qt_waviness//filename.ini");
-
-
-
         QDir path; // 创建一个QDir变量
 
-        auto num=filename_mwa_.size()-4;
+        auto num=filename_mwa_.size()-4;//获取路径名
         auto file=filename_mwa_.mid(0,filename_mwa_.size()-4);
 
         if (!path.exists(file)) {  // 使用QDir成员函数exists()来判断文件夹是否存在
@@ -843,10 +575,11 @@ void MainWindow::on_action12_4_triggered()
 
 }
 
+//校准页面
 void MainWindow::recive_calibration()
 {
     //auto pos=qFind(transducer_name_.begin(),transducer_name_.end(),'/');
-    QStringList list = transducer_name_.split("/");
+    QStringList list = transducer_name_.split("/");//获取传感器的名字
 
     if(calibration_==nullptr)
     {

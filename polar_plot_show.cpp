@@ -1027,13 +1027,13 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
         curve_min->setData (data_min);
         curve_min->attach(plot.get());
 
-//        plot->replot();
+        plot->replot();
 
 //        data_radius.clear();
 
 
 
-        ui->verticalLayout_3->addWidget(plot.get());
+//        ui->verticalLayout_3->addWidget(plot.get());
 
 
 //    auto value_float=float(value.size());

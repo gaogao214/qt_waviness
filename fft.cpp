@@ -125,7 +125,7 @@ QVector<double> fft::dft(QVector<double> vec,int len)
 
     phase_angle_vec_.reserve(len);
     amplitude_.reserve(len);
-    for (int i = 0; i < m_dft_vector_size_/*/2*/; i++) {
+    for (int i = 1; i < m_dft_vector_size_/*/2*/; i++) {
 
         std::complex<double> c3(m_dft_vector_[i].m_rl, m_dft_vector_[i].m_im);
 

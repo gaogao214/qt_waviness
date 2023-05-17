@@ -15,6 +15,7 @@
 #include "calibration.h"
 #include "function_key.h"
 #include "measurement_task.h"
+#include "controller.h"
 
 #ifdef __cplusplus
 extern "C"{
@@ -32,9 +33,9 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-static constexpr int k_measurement_point=7200;
-static constexpr char* k_ip="10.2.1.12";
-static constexpr uint16_t k_port=512;
+//static constexpr int k_measurement_point=7200;
+//static constexpr char* k_ip="10.2.1.12";
+//static constexpr uint16_t k_port=512;
 
 class MainWindow : public QMainWindow
 {
@@ -46,45 +47,15 @@ public:
 
 public:
 
-    int sampleMX371xTransducerGetAutoRefreshValuesEx(struct modbus * modbus, int NumberOfChannels);
-
-    int sampleMX371xTransducerInitAndStartAutoRefreshEx(struct modbus * modbus);
-
-    int sampleMX371xTransducerStopAndReleaseAutoRefreshEx(struct modbus * modbus);
-
-    static const char * typestr(uint32_t type);
-
-    int sampleMX371xTransducerGetNbrOfTypeEx(struct modbus * modbus, uint32_t* NumberOfTransducerTypes);
-
-    int sampleMX371xGetTransducerDatabaseCursorEx(struct modbus * modbus, uint32_t* TransducerDatabaseCursor);
-
-    int sampleMX371xTransducerGetTypeInformationEx(struct modbus * modbus, struct MX371x__TransducerGetTypeInformationEx_parameters_t* TransducerGetTypeInformation);
-
-    int sampleMX371xSetTransducerDatabaseCursorEx(struct modbus * modbus, uint32_t new_);
-
-    int dumpTransducerDatabase(struct modbus * modbus);
-
-    void connectingDevice();
-
-    void counterInput();
-
-    int sample_MSXE371x__IncCounterInit(struct modbus * modbus);
-
-    int sample_MSXE371x__IncCounterClear(struct modbus * modbus);
-
-    int sample_MSXE371x__IncCounterWrite32BitValue(struct modbus * modbus);
-
-    int sample_MSXE371x__IncCounterRead32BitsValue(struct modbus * modbus, uint32_t *pulValue, uint32_t *pulTimeStampLow, uint32_t *pulTimeStampHigh);
-
-    int sample_MSXE371x__IncCounterRelease(struct modbus * modbus);
-
     void windowtitle(QString title);
 
-    void threadGetMSXdata();
+    void initStatusBar();
 
+    void initFunctionKey();
 
+    void loadingMeasurement();
 
-
+    void finishedMeasurement();
 
 private slots:
 
@@ -139,6 +110,8 @@ private slots:
 
     void on_action1_triggered();
 
+    void recive_msxe3711_data(QVector<double> data);
+
 
 
 private:
@@ -151,13 +124,13 @@ private:
 
     QString filename_mwa_=nullptr;
 
-    QLabel* show_time_label_;
-    QLabel* show_part_count_label_;
-    QLabel* show_connect_information_;
+    std::unique_ptr<QLabel> show_time_label_=nullptr;//显示时间
+    std::unique_ptr<QLabel> show_part_count_label_=nullptr;//显示计件数
+//    std::unique_ptr<QLabel> show_connect_information_=nullptr;//显示连接状态
 
-    QVector<double> displacement_data_;
+//    QVector<double> displacement_data_;
 
-    std::shared_ptr<new_profile> config_graph_=nullptr;
+    std::unique_ptr<new_profile> config_graph_=nullptr;
 
     std::unique_ptr<configuration> config_configure_=nullptr;
     std::unique_ptr<statistical_report> report_=nullptr;
@@ -169,6 +142,17 @@ private:
     std::unique_ptr<function_key> function_key_=nullptr;
 
     std::unique_ptr<measurement_task> config_task_=nullptr;
+
+     std::unique_ptr<QDialog> delay_dialog_=nullptr;
+
+    std::unique_ptr<QMovie> delay_movie_=nullptr;
+
+    std::unique_ptr<QLabel> delay_label_=nullptr;
+
+    std::unique_ptr<controller> controller_=nullptr;
+
+    std::unique_ptr<QTimer> real_time_=nullptr;
+
 
 public:
     QString transducer_name_;
