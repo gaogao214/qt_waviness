@@ -69,6 +69,11 @@
             <string>+-500μm</string>
            </property>
           </item>
+          <item>
+           <property name="text">
+            <string>+-2000μm</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item>
@@ -117,7 +122,7 @@
      <x>0</x>
      <y>0</y>
      <width>1233</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -135,8 +140,8 @@
      <property name="title">
       <string>打开</string>
      </property>
-     <addaction name="action1_9"/>
-     <addaction name="action1_10"/>
+     <addaction name="open_configuration"/>
+     <addaction name="open_measurement_job"/>
      <addaction name="action1_11"/>
     </widget>
     <widget class="QMenu" name="menu_4">
@@ -150,7 +155,7 @@
      <property name="title">
       <string>另存为</string>
      </property>
-     <addaction name="action1"/>
+     <addaction name="save_as_configuration"/>
      <addaction name="action1_4"/>
      <addaction name="action1_15"/>
     </widget>
@@ -204,7 +209,7 @@
     <addaction name="action12"/>
     <addaction name="action12_2"/>
     <addaction name="action12_3"/>
-    <addaction name="action12_4"/>
+    <addaction name="calibration_password"/>
     <addaction name="action12_5"/>
     <addaction name="action12_6"/>
     <addaction name="action12_7"/>
@@ -215,10 +220,10 @@
     <property name="title">
      <string>窗口</string>
     </property>
-    <addaction name="action1_25"/>
-    <addaction name="action1_26"/>
+    <addaction name="polar_diagram"/>
+    <addaction name="spectrogram"/>
     <addaction name="action1_27"/>
-    <addaction name="action1_28"/>
+    <addaction name="statistical_report"/>
     <addaction name="action1_29"/>
    </widget>
    <widget class="QMenu" name="menu_12">
@@ -288,7 +293,7 @@
     <string>F2</string>
    </property>
   </action>
-  <action name="action1_9">
+  <action name="open_configuration">
    <property name="text">
     <string>配置</string>
    </property>
@@ -296,7 +301,7 @@
     <string>F3</string>
    </property>
   </action>
-  <action name="action1_10">
+  <action name="open_measurement_job">
    <property name="text">
     <string>测量作业</string>
    </property>
@@ -357,7 +362,7 @@
     <string>上次测量的统计</string>
    </property>
   </action>
-  <action name="action1">
+  <action name="save_as_configuration">
    <property name="text">
     <string>配置</string>
    </property>
@@ -412,7 +417,7 @@
     <string>密码</string>
    </property>
   </action>
-  <action name="action12_4">
+  <action name="calibration_password">
    <property name="text">
     <string>校准</string>
    </property>
@@ -442,12 +447,12 @@
     <string>全屏</string>
    </property>
   </action>
-  <action name="action1_25">
+  <action name="polar_diagram">
    <property name="text">
     <string>极图</string>
    </property>
   </action>
-  <action name="action1_26">
+  <action name="spectrogram">
    <property name="text">
     <string>光谱</string>
    </property>
@@ -457,7 +462,7 @@
     <string>定制化报告</string>
    </property>
   </action>
-  <action name="action1_28">
+  <action name="statistical_report">
    <property name="text">
     <string>统计</string>
    </property>

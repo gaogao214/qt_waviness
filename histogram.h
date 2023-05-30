@@ -23,9 +23,12 @@ public:
     ~histogram();
 
 public:
-    void populate(QVector<double> data);
+//    void populate(QVector<double> data);
 
     void waviness(QVector<double> data,int rotate_speed=700);
+
+public slots:
+    void draw_histogram(QVector<double> data);
 
 
 private:

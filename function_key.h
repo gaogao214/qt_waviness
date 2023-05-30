@@ -28,7 +28,7 @@ private slots:
 
     void on_pushButton_4_clicked();
 
-    void on_pushButton_10_clicked();
+    void on_statistical_report_clicked();
 
 signals:
     void signal_F9();

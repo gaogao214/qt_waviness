@@ -48,6 +48,24 @@ histogram::histogram(QWidget *parent) :
     ui(new Ui::histogram)
 {
     ui->setupUi(this);
+
+    setAxisScale(QwtPlot::xBottom, 0, 2048);
+    setAxisMaxMajor(QwtPlot::xBottom, 30);
+    setAxisMaxMinor(QwtPlot::xBottom, 0);
+    setAxisScale(QwtPlot::yLeft, 0, 1);
+    //    d_chart->setAxisMaxMajor(QwtPlot::yLeft, 6);
+    //    d_chart->setAxisMaxMinor(QwtPlot::yLeft, 2);
+
+    QFont fontX;
+    fontX.setFamily(QStringLiteral("微软雅黑"));
+    fontX.setPointSize(5);
+    setAxisFont(QwtPlot::xBottom, fontX);
+    setTitle("谐波");
+
+//    QwtPlotGrid *grid = new QwtPlotGrid;
+//    grid->setMajorPen(QColor(193, 193, 193), 1, Qt::DashLine);
+//    grid->attach(histogram_chart_.get());
+
 }
 
 histogram::~histogram()
@@ -55,7 +73,7 @@ histogram::~histogram()
     delete ui;
 }
 
-void histogram::populate(QVector<double> data)
+void histogram::draw_histogram(QVector<double> data)
 {
 
     DistroChartItem* d_barChartItem = new DistroChartItem();

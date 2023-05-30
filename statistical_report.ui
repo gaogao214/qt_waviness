@@ -93,7 +93,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="part_type_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -111,7 +111,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="factory_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -129,7 +129,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="attribute_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -147,7 +147,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="branch_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -165,7 +165,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="number_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -183,7 +183,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="machine_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -201,7 +201,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="order_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -219,7 +219,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="operate_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -241,7 +241,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="channel_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -259,7 +259,7 @@ p, li { white-space: pre-wrap; }
                <item>
                 <widget class="QLabel" name="operator_label">
                  <property name="text">
-                  <string>TextLabel</string>
+                  <string/>
                  </property>
                 </widget>
                </item>

@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include <fstream>
+
 #ifdef _WIN32
 #define sleep Sleep
 #else
@@ -10,27 +12,24 @@
 #endif
 
 
+
 get_msxe3711_data::get_msxe3711_data(QObject *parent)
     : QObject(parent)
 {
     qRegisterMetaType<struct modbus>("struct modbus");
     qRegisterMetaType<QVector<double>>("QVector<double>");
-    qDebug() << "Worker()" << "thread:" << QThread::currentThreadId();
 
-     connectMSXe3711();
+//    connectMSXe3711();
+    if(evaluation_criterion_==nullptr)
+    {
+        evaluation_criterion_=std::make_unique<evaluation_criterion>();
 
-//     counterInput();
+    }
 }
 
 get_msxe3711_data::~get_msxe3711_data()
 {
-    qDebug() << "~Worker()" << "thread:" << QThread::currentThreadId();
-}
-
-void get_msxe3711_data::doSomething(const QString &cmd)
-{
-    qDebug() << "doSomething()" << cmd << "thread:" << QThread::currentThreadId();
-    emit resultNotify("doSomething ok!");
+    qDebug() << "~get_msxe3711_data()" << "thread:" << QThread::currentThreadId();
 }
 
 //连接msx-e3711服务器
@@ -45,44 +44,89 @@ void get_msxe3711_data::connectMSXe3711()
         break;
     case -1:
         addidata_network_perror("modbus_connect");
-
-        connectMSXe3711();
-
         qDebug()<<"连接失败\n";
 
+        connectMSXe3711();
         break;
     case -2:
-         connectMSXe3711();
         qDebug()<<"连接失败\n";
-
+        connectMSXe3711();
         break;
     case -3:
-        connectMSXe3711();
         qDebug()<<"连接失败\n";
+        connectMSXe3711();
         break;
     default:
-        connectMSXe3711();
         qDebug()<<"连接失败\n";
-
+        connectMSXe3711();
         break;
     }
-     dumpTransducerDatabase(&modbus_);
+
 }
 
 //获取msx-e3711的采集数据
 void get_msxe3711_data::getMSXdata()
 {
+    qDebug() << "get_msxe3711_data()"<< "thread:" << QThread::currentThreadId();
+
+//    counterInput();
+
+    displacement_data_.clear();
+
+    dumpTransducerDatabase(&modbus_);
 
     sampleMX371xTransducerInitAndStartAutoRefreshEx(&modbus_);
 
-    for (int i=0;i<2048;i++)
+    for (int i=0;i<k_measurement_point;i++)
     {
         sampleMX371xTransducerGetAutoRefreshValuesEx(&modbus_,1);
     }
 
     sampleMX371xTransducerStopAndReleaseAutoRefreshEx(&modbus_);
 
-    emit signal_msxe3711_data(displacement_data_);
+    if(displacement_data_.size()==0)
+    {
+
+        std::ifstream ifs;							//创建流对象
+
+        ifs.open("C:\\Users\\gaohuan\\Desktop\\lunkuo.txt", std::ios::in);	//打开文件
+
+        if (!ifs.is_open())						//判断文件是否打开
+        {
+            qDebug() << "打开文件失败！！！";
+        }
+
+        std::vector<std::string> item;		//用于存放文件中的一行数据
+
+        std::string temp;				//临时存储文件中的一行数据
+
+        while (std::getline(ifs,temp))  //利用 getline（）读取文件中的每一行，并放入到 item 中
+        {
+            item.push_back(temp);
+        }
+        float lat;
+
+        QVector<float> vec;
+
+        //遍历文件中的每一行数据
+        for (auto it = item.begin(); it != item.end(); it++)
+        {
+            QString str=QString::fromStdString(*it);
+
+            lat = std::stod(*it);
+            str=QString::number(lat,'f',4);
+            lat=str.toFloat();
+
+
+            displacement_data_.push_back(lat);
+        }
+
+    }
+    QVector<double> amplitude=evaluation_criterion_->dft(displacement_data_,displacement_data_.size());
+    evaluation_criterion_->polarCoordinatesToCartesianCoordinates(displacement_data_,0,0);
+
+    emit signal_msxe3711_evaluation_criterion(evaluation_criterion_->tempPoint_.radius,evaluation_criterion_->min_coverage_circle_.radius);
+    emit signal_msxe3711_data(displacement_data_,amplitude);
 }
 
 int get_msxe3711_data::sampleMX371xTransducerInitAndStartAutoRefreshEx(struct modbus * modbus)
@@ -112,7 +156,8 @@ int get_msxe3711_data::sampleMX371xTransducerInitAndStartAutoRefreshEx(struct mo
     channelmask_dec>>channel_num;
 
     QString str="T"+QString::number(channel_num);
-//    ui->transducer_label->setText(str);
+
+    emit signal_msxe3711_channel(str);
 
     ret = modbus_call_MX371x__TransducerInitAndStartAutoRefreshEx(modbus,TransducerSelection,ChannelMask,AverageMode,AverageValue,TriggerMask,TriggerMode,HardwareTriggerEdge,HardwareTriggerCount,ByTriggerNbrOfSeqToAcquire,DataFormat,Option1,Option2,Option3,Option4,&CommandStatus);
 
@@ -141,11 +186,9 @@ int get_msxe3711_data::sampleMX371xTransducerGetAutoRefreshValuesEx(struct modbu
 
     if (!handle_result_of_FC3_query(modbus, ret, "modbus_call_MX371x__TransducerGetAutoRefreshValuesEx"))
     {
-        int i;
-
-        for (i=1;i<=NumberOfChannels;i++)
+        for (int i=1;i<=NumberOfChannels;i++)
         {
-//            ui->label_4->setNum((*((float*)&Response.Value[i]))*1000.0);
+            emit signal_msxe3711_measurement_point((*((float*)&Response.Value[i]))*1000.0);
 
             displacement_data_.push_back((*((float*)&Response.Value[i]))*1000.0);
 
@@ -245,12 +288,11 @@ int get_msxe3711_data::dumpTransducerDatabase(struct modbus * modbus)
 
             ret =  sampleMX371xTransducerGetTypeInformationEx(modbus, &TransducerGetTypeInformation);
 
-
-
             transducer_name_=QString::fromUtf8(reinterpret_cast<const char*>(TransducerGetTypeInformation.Name),sizeof(TransducerGetTypeInformation.Name));
 
-//            memcpy(&s,&TransducerGetTypeInformation.Name,100);
-            qDebug()<<"name :"<<transducer_name_;
+            emit signal_msxe3711_sensor_type(transducer_name_);
+
+//            qDebug()<<"name :"<<transducer_name_;
 
             if (i == 0)
                 TRANSDUCER_SELECTION = TransducerGetTypeInformation.SelectionIndex;
@@ -358,9 +400,9 @@ int get_msxe3711_data::sample_MSXE371x__IncCounterRead32BitsValue(struct modbus 
     *pulTimeStampLow  = Response.ulTimeStampLow;
     *pulTimeStampHigh = Response.ulTimeStampHigh;
 
-    printf("Counter/position: %d\n",*pulValue);
-    printf("Time stamp low  : %u\n", *pulTimeStampLow);
-    printf("Time stamp high : %u\n", *pulTimeStampHigh);
+    qDebug()<<"Counter/position: "<<*pulValue<<"\n";
+//    printf("Time stamp low  : %u\n", *pulTimeStampLow);
+//    printf("Time stamp high : %u\n", *pulTimeStampHigh);
 
     return 0;
 }

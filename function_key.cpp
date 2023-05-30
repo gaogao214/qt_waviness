@@ -44,7 +44,7 @@ void function_key::on_pushButton_4_clicked()
     emit signal_F4();
 }
 
-void function_key::on_pushButton_10_clicked()
+void function_key::on_statistical_report_clicked()
 {
     emit signal_F10();
 }

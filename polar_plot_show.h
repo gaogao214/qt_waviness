@@ -47,6 +47,15 @@
 #include <qwt_polar_panner.h>
 #include <qwt_plot_curve.h>
 
+#include "controller.h"
+#include<iostream>
+#include<cstdlib>
+#include<ctime>
+
+#include "image_controller.h"
+
+using namespace std;
+
 namespace Ui {
 class polar_plot_show;
 }
@@ -93,7 +102,7 @@ public:
 
     void startToPrepare();
 
-    void maindowThreadData(QVector<double> displacement_data,QString range);
+    void maindowThreadData(QVector<double> displacement_data,QVector<double> amplitude,QString range);
 
     void LeastSquaresCircle();
 
@@ -160,7 +169,7 @@ public slots:
 
     void recive_operate(bool flag);
 
-    void recive_recogntion_config(recognition_config config);
+    void reciveRecogntionConfig(recognition_config config);
 
     void recive_tolerance(bool flag);
 
@@ -175,6 +184,18 @@ public slots:
     void recive_show_y_barchart(QString data);
 
     void polar_diagram(QString range);
+
+    void reciveSmallCalibration(float data);
+
+    void reciveLargeCalibration(float data);
+
+
+    void reciveFlag(bool flag);
+
+    void MSXE3711EvaluationCriterion(double ,double);
+
+signals:
+    void signalLSCrToController(QString,QString);
 
 
 private:
@@ -255,6 +276,23 @@ public:
 
     recognition_config widget_config_;
 
+    std::unique_ptr<controller> controller_qwt_=nullptr;
+
+    QString range_;
+
+    float small_calibration_=1.0;
+
+    float large_calibration_=1.0;
+
+    bool flag_=false;
+
+    QString str_time_;
+    clock_t start_,end_;
+
+    std::unique_ptr<image_controller> image_controller_=nullptr;
+
+    double leastsquare_radius_of_circle_=0;
+    double minimum_radius_of_outer_circle_=0;
 };
 
 #endif // POLAR_PLOT_SHOW_H

@@ -140,7 +140,7 @@ QVector<double> fft::dft(QVector<double> vec,int len)
         phase_angle_vec_.push_back(phase_angle);
 
 //                std::ofstream ofs;
-//                ofs.open("C:\\Users\\gaohuan\\Desktop\\7200_fuzhi.txt", std::ios::out|std::ios::app);	//打开文件
+//                ofs.open("C:\\Users\\gaohuan\\Desktop\\luokuo_fuzhi.txt", std::ios::out|std::ios::app);	//打开文件
 
 //                if (!ofs.is_open())						//判断文件是否打开
 //                {
@@ -167,6 +167,7 @@ void fft::polarCoordinatesToCartesianCoordinates(QVector<double> displacement_of
 //    point_info_.reserve(1024);
     point_info_.clear();
 //    a.clear();
+    m_dft_vector_size_=displacement_of_each_point.size();
 
     for(int i=0;i<(m_dft_vector_size_/*/2*/)/*-1*/;i++)
     {
@@ -188,10 +189,10 @@ void fft::polarCoordinatesToCartesianCoordinates(QVector<double> displacement_of
 
     leastSquaresMeanCircle(point_info_);
 
-     QVector<double> w(points.size(), 1);
+//     QVector<double> w(points.size(), 1);
 
-     cv::Point2f center_opencv;
-          double radius_opencv = 0;
+//     cv::Point2f center_opencv;
+//          double radius_opencv = 0;
 
 //    CirleFit(points, w, center_opencv, radius_opencv);
 

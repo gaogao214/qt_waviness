@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QDebug>
 #include <QThread>
+#include "evaluation_criterion.h"
+
 
 #ifdef __cplusplus
 extern "C"{
@@ -29,7 +31,6 @@ public:
     ~get_msxe3711_data();
 
 public:
-//    void getMSXdata(struct modbus modbus_);
 
     int sampleMX371xTransducerInitAndStartAutoRefreshEx(struct modbus * modbus);
 
@@ -64,22 +65,33 @@ public:
 
 
 public slots:
-    void doSomething(const QString& cmd);
 
     void getMSXdata();
 
 signals:
-    void resultNotify(const QString& des);
+    void signal_msxe3711_measurement_point(double );
 
-    void signal_msxe3711_data(QVector<double>);
+    void signal_msxe3711_data(QVector<double>,QVector<double>);
+
+    void signal_msxe3711_sensor_type(QString);
+
+    void signal_msxe3711_channel(QString);
+
+    void signal_msxe3711_evaluation_criterion(double leastsquare_radius_of_circle,double minimum_radius_of_outer_circle);
 
 public:
     uint32_t TRANSDUCER_SELECTION = 0;
-    QVector<double> displacement_data_;
-    struct modbus modbus_;
-     QString transducer_name_;
 
-     bool connect_flag_=false;
+    QVector<double> displacement_data_;
+
+    QString transducer_name_;
+
+    struct modbus modbus_;
+
+    bool connect_flag_=false;
+
+    std::unique_ptr<evaluation_criterion> evaluation_criterion_=nullptr;
+
 };
 
 #endif // GET_MSXE3711_DATA_H

@@ -27,6 +27,7 @@
 #include "histogram.h"
 #include "get_polar_data.h"
 
+
 #include <qwt_polar_magnifier.h>
 
 
@@ -37,20 +38,6 @@ PolarPlotShow::PolarPlotShow(QWidget *parent) :
     ui->setupUi(this);
 
 
-    //    ui->histogram_->xAxis->setRange(0, 2048);//x ,y 的坐标
-    //    ui->histogram_->yAxis->setRange(0.000,0.05);
-
-    ui->curve_graph_->xAxis->setRange(0, 360);//x ,y 的坐标
-    ui->curve_graph_->yAxis->setRange(-2, 15);
-
-    //    ui->waviness->xAxis->setRange(0, 360);//x ,y 的坐标
-    //    ui->waviness->yAxis->setRange(-2, 15);
-
-    //    ui->histogram_->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);  //用户可以通过拖拽坐标轴和滑动滚轮的方式来缩放图像
-
-    //    ui->histogram_->hide();
-    //    ui->waviness->hide();
-    //    ui->circle_graph->hide();
     ui->curve_graph_->hide();
     //    waviness_chart_.get()->hide();
 
@@ -60,15 +47,13 @@ PolarPlotShow::PolarPlotShow(QWidget *parent) :
     waviness_chart_.get()->hide();
 
     //qwt极坐标图
-        ui->circle_graph->hide();
-//        polar_diagram();
-
+    ui->circle_graph->hide();
 
 
 
     barChart();
 
-    //各个子菜单显示
+    //初始化子菜单显示
     poleDiagramDisplayMenu();
     areaOfRemarksMenu();
     resultsTheMenu();
@@ -76,7 +61,7 @@ PolarPlotShow::PolarPlotShow(QWidget *parent) :
     curveGraphMenu();
     histogramMenu();
 
-    startToPrepare();
+//    startToPrepare();
 
     QTimer *timer_calendar;
     timer_calendar=new QTimer(this);
@@ -94,8 +79,6 @@ PolarPlotShow::~PolarPlotShow()
 {
     delete ui;
 }
-
-
 
 //结果区域显示
 void PolarPlotShow::reciveResultAreaAttribute_(QVector<table_config> tab_config)
@@ -148,30 +131,25 @@ void PolarPlotShow::reciveResultAreaAttribute_(QVector<table_config> tab_config)
         ui->tableWidget->setItem(RowCont,1,new QTableWidgetItem(tab_config[i].secondary_criteria+" "+tab_config[i].Harm_count));  //次要准则
 
         ui->tableWidget->setItem(RowCont,2,new QTableWidgetItem("0.0000000"));                       //结果
-        //        ui->tableWidget->setItem(RowCont,3,new QTableWidgetItem("0.0000000"));                       //单位
+
         ui->tableWidget->setItem(RowCont,4,new QTableWidgetItem(tab_config[i].reasonable_upper_limit));                       //限值
-        //    ui->tableWidget->setItem(RowCont,5,new QTableWidgetItem("0.0000000"));                 //公差条
+
         /* QProgressBar* */progressBar =new QProgressBar(ui->tableWidget);
 
         ui->tableWidget->setColumnWidth(5,200);
         progressBar->setMaximumHeight(25);
-        //        progressBar->setMaximum(0);
+
 
         ui->tableWidget->setCellWidget(RowCont,5,progressBar);
         tab_string_main.push_back(tab_config[i].main_criteria);
 
-
-
-
     }
 
-
     ui->tableWidget->viewport()->update();
-
 }
 
 //识别区域
-void PolarPlotShow::recive_recogntion_config(recognition_config config)
+void PolarPlotShow::reciveRecogntionConfig(recognition_config config)
 {
     ui->part_type_label->setText(config.part_type);
     ui->attribute_label->setText(config.attribute);
@@ -187,6 +165,23 @@ void PolarPlotShow::recive_recogntion_config(recognition_config config)
     ui->machine_label->setText(config.machine);
     widget_config_=config;
 
+}
+
+//校准 小 放大系数
+void PolarPlotShow::reciveSmallCalibration(float data)
+{
+    small_calibration_=data;
+}
+//校准 大 放大系数
+void PolarPlotShow::reciveLargeCalibration(float data)
+{
+    large_calibration_=data;
+}
+
+//校准
+void PolarPlotShow::reciveFlag(bool flag)
+{
+    flag_=flag;
 }
 
 //根据计算显示结果区域
@@ -228,26 +223,26 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
                 {
                     tab_config_.result=QString::number(fft_.max1_,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 else if(tab_config_.secondary_criteria=="max2")
                 {
                     tab_config_.result=QString::number(fft_.max2_,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 else if(tab_config_.secondary_criteria=="max3")
                 {
                     tab_config_.result=QString::number(fft_.max3_,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }else if(tab_config_.secondary_criteria=="Harm")
                 {
                     double value_=fft_.amplitude_[tab_config_.Harm_count.toDouble()];
                     tab_config_.result=QString::number(value_,'f',3);
 
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
             }
 
@@ -255,19 +250,42 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
             {
                 if(tab_config_.secondary_criteria=="△r")
                 {
-                    auto difference_of_radius_=(num_max_-num_min_)/*-(fft_.tempPoint_.radius-num_min_)*/;
-                    tab_config_.result=QString::number(difference_of_radius_,'f',3);
-                    ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+                    if(range_=="+-50μm")
+                    {
+                        auto difference_of_radius_=(num_max_-num_min_)*small_calibration_/*-(fft_.tempPoint_.radius-num_min_)*/;
+                        tab_config_.result=QString::number(difference_of_radius_,'f',3);
+                        ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
+
+                        QString str="LSC △r"+QString("%1").arg(tab_config_.result);
+
+                        if(flag_==true)
+                        {
+                              emit signalLSCrToController(str,range_); //发送给校准页面，校准页面进行放大系数计算
+                        }
+                    }
+                    else if(range_=="+-500μm")
+                    {
+                        auto difference_of_radius_=(num_max_-num_min_)*large_calibration_/*-(fft_.tempPoint_.radius-num_min_)*/;
+                        tab_config_.result=QString::number(difference_of_radius_,'f',3);
+                        ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
+
+                        QString str="LSC △r"+QString("%1").arg(tab_config_.result);
+
+                        if(flag_==true)
+                        {
+                              emit signalLSCrToController(str,range_);
+                        }
+                    }
+
+
                 }
                 if(tab_config_.secondary_criteria=="fln1")
                 {
                     auto difference_of_radius_=(num_max_-fft_.tempPoint_.radius)+(fft_.tempPoint_.radius-num_min_);
                     tab_config_.result=QString::number(difference_of_radius_,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
-                }
 
+                }
             }
 
 
@@ -295,7 +313,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
                     auto w2=1.4142 * 3.1416 * (rotate_speed/60) * amplitude_[2]*2 ; //根号2 * pi * 转速/60 *谐波*波次amplitude_;
                     tab_config_.result=QString::number(w2,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="M")
                 {
@@ -313,7 +331,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(waviness_sqrt,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="M1")
                 {
@@ -331,7 +349,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(waviness_sqrt,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="M2")
                 {
@@ -349,7 +367,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(waviness_sqrt,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="H")
                 {
@@ -367,14 +385,14 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(waviness_sqrt,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W2")
                 {
                     auto w2=1.4142 * 3.1416 * (rotate_speed/60) * amplitude_[2]*2 ; //根号2 * pi * 转速/60 *谐波*波次amplitude_;
                     tab_config_.result=QString::number(w2,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W3")
                 {
@@ -382,7 +400,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w3,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W4")
                 {
@@ -390,7 +408,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w4,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W5")
                 {
@@ -398,7 +416,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w5,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W6")
                 {
@@ -406,7 +424,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w6,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W7")
                 {
@@ -414,7 +432,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w7,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W8")
                 {
@@ -422,7 +440,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w8,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W9")
                 {
@@ -430,7 +448,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w9,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
 
             }
@@ -443,7 +461,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
                     auto w2=1.4142 * 3.1416 * (rotate_speed/60) * amplitude_[2]*2 ; //根号2 * pi * 转速/60 *谐波*波次amplitude_;
                     tab_config_.result=QString::number(w2,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W3")
                 {
@@ -451,7 +469,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w3,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W4")
                 {
@@ -459,7 +477,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w4,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W5")
                 {
@@ -467,7 +485,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w5,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W6")
                 {
@@ -475,7 +493,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w6,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W7")
                 {
@@ -483,7 +501,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w7,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W8")
                 {
@@ -491,7 +509,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w8,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
                 if(tab_config_.secondary_criteria=="W9")
                 {
@@ -499,7 +517,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                     tab_config_.result=QString::number(w9,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
-                    //                    ui->tableWidget->item(i,3)->setText(QString("%1").arg("μm"));
+
                 }
 
             }
@@ -611,83 +629,138 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
 }
 
-void PolarPlotShow::maindowThreadData(QVector<double> displacement_data,QString range)
+
+void PolarPlotShow::maindowThreadData(QVector<double> displacement_data,QVector<double> amplitude,QString range)
 {
 
     qDebug("polar polt show 已接收到\n");
     qDebug()<<displacement_data.size();
 
-//    displacement_data.clear();
+    amplitude_=amplitude;//振幅
+    fft_.gaussianBand(displacement_data);//高斯滤波
 
-//    std::ifstream ifs;							//创建流对象
-
-//    ifs.open("C:\\Users\\gaohuan\\Desktop\\7200.txt", std::ios::in);	//打开文件
-
-//    if (!ifs.is_open())						//判断文件是否打开
-//    {
-//        qDebug() << "打开文件失败！！！";
-//    }
-
-//    std::vector<std::string> item;		//用于存放文件中的一行数据
-
-//    std::string temp;				//临时存储文件中的一行数据
-
-//    while (std::getline(ifs,temp))  //利用 getline（）读取文件中的每一行，并放入到 item 中
-//    {
-//        item.push_back(temp);
-//    }
-//    float lat;
-
-//    QVector<float> vec;
-
-//    //遍历文件中的每一行数据
-//    for (auto it = item.begin(); it != item.end(); it++)
-//    {
-//        QString str=QString::fromStdString(*it);
-
-//        lat = std::stod(*it);
-//        str=QString::number(lat,'f',4);
-//        lat=str.toFloat();
-
-
-//        displacement_data.push_back(lat);
-//    }
-
-    //    /*清屏重绘*/
-//        ui->qwtPlot->detachItems();
-//        ui->qwtPlot->replot();
-    int len=displacement_data.size();
-
-    amplitude_=fft_.dft(displacement_data,len);
-
-    fft_.gaussianBand(displacement_data);
 
     num_min_=*(std::min_element(displacement_data.begin(),displacement_data.end()));
     num_max_=*(std::max_element(displacement_data.begin(),displacement_data.end()));
 
-    qDebug()<<"min:"<<std::to_string(num_min_).c_str();
-    qDebug()<<"max:"<<std::to_string(num_max_).c_str();
+    range_=range;//极图半径范围
 
-    polar_diagram(range);
+
+    polar_diagram(range);//初始化极坐标图
     histogramShow(amplitude_);
     waviness(amplitude_);
     poleDiagramDisplay(displacement_data,range);
+
 
     QwtPolarMagnifier* d_zoomer = new QwtPolarMagnifier(plot->canvas());
 
     d_zoomer->setEnabled(true);
 
-     //鼠标左键平移
+    //鼠标左键平移
+    QwtPolarPanner*  d_panner = new QwtPolarPanner(plot->canvas());
 
-     QwtPolarPanner*  d_panner = new QwtPolarPanner(plot->canvas());
-
-     d_panner->setEnabled(true);
+    d_panner->setEnabled(true);
 
     curveGraphShow(displacement_data);
 
 }
 
-//谐波柱形图
+void PolarPlotShow::MSXE3711EvaluationCriterion(double leastsquare_radius_of_circle,double minimum_radius_of_outer_circle)
+{
+    qDebug()<<"MSXE3711EvaluationCriterion:"<<leastsquare_radius_of_circle<<" "<<minimum_radius_of_outer_circle<<"\n";
+
+    leastsquare_radius_of_circle_=leastsquare_radius_of_circle; //最小二乘圆半径
+    minimum_radius_of_outer_circle_=minimum_radius_of_outer_circle; //最小外切圆
+}
+
+//初始化波纹度柱形图
+void PolarPlotShow::wavinessChart()
+{
+    if(waviness_chart_==nullptr)
+    {
+        waviness_chart_ = std::make_unique<histogram>();
+
+        waviness_chart_->setAxisScale(QwtPlot::xBottom, 0, 2048);
+        waviness_chart_->setAxisMaxMajor(QwtPlot::xBottom, 30);
+        waviness_chart_->setAxisMaxMinor(QwtPlot::xBottom, 0);
+        waviness_chart_->setAxisScale(QwtPlot::yLeft, 0, 10);
+
+
+        QFont fontX;
+        fontX.setFamily(QStringLiteral("微软雅黑"));
+        fontX.setPointSize(5);
+        waviness_chart_->setAxisFont(QwtPlot::xBottom, fontX);
+        waviness_chart_->setTitle("波纹度");
+
+
+        ui->horizontalLayout_6->addWidget(waviness_chart_.get());
+
+
+    }
+}
+
+//初始化线性曲线
+void PolarPlotShow::curveBightChart()
+{
+    /*清屏重绘*/
+//        ui->qwtPlot->detachItems();
+//        ui->qwtPlot->replot();
+
+    /*setAxisScale四个参数的含义分别是：坐标轴->坐标轴最小值->坐标轴最大值->步进*/
+    ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,100,10);
+    ui->qwtPlot->setAxisScale(QwtPlot::yLeft,0,10,2);
+    ui->qwtPlot->setAxisTitle(QwtPlot::xBottom,"x 轴(data)");
+    ui->qwtPlot->setAxisTitle(QwtPlot::yLeft,"y 轴(data)");
+
+
+
+}
+
+//初始化极坐标图
+void PolarPlotShow::polar_diagram(QString range)
+{
+    QwtPolarGrid* grid=new QwtPolarGrid();
+    //    grid->setFont (QFont("Times", 16, QFont::Bold));
+    grid->setPen ( QPen(Qt::lightGray,1, Qt::DashDotLine) );
+    grid->setAxisPen ( QwtPolar::AxisAzimuth, QPen(Qt::black, 1) );
+    //grid.setAxisPen ( QwtPolar::AxisLeft, QPen(Qt::black, 1) );
+
+    grid->showGrid (QwtPolar::AxisAzimuth, true);
+    grid->showGrid (QwtPolar::AxisLeft, true);
+    grid->showGrid (QwtPolar::AxisRight, false);
+    grid->showGrid (QwtPolar::AxisTop, false);
+    grid->showGrid (QwtPolar::AxisBottom, false);
+
+    if(plot==nullptr)
+    {
+        plot=std::make_unique<QwtPolarPlot>();
+
+        plot->setScale( QwtPolar::ScaleAzimuth, 0, 360, 30);
+
+    }
+
+    grid->attach(plot.get());
+
+    ui->verticalLayout_3->addWidget(plot.get());
+
+
+    if(range=="+-50μm")
+    {
+         plot->setScale( QwtPolar::ScaleRadius, -50,50, 0.5);
+    }else if(range=="+-500μm")
+    {
+         plot->setScale( QwtPolar::ScaleRadius, -500,500, 0.5);
+    }
+    else if(range=="")
+    {
+        plot->setScale( QwtPolar::ScaleRadius, -2,2, 0.5);
+     }
+
+
+}
+
+
+//初始化谐波柱形图
 void PolarPlotShow::barChart()
 {
 
@@ -720,103 +793,6 @@ void PolarPlotShow::barChart()
 
 }
 
-//波纹度柱形图
-void PolarPlotShow::wavinessChart()
-{
-    if(waviness_chart_==nullptr)
-    {
-        waviness_chart_ = std::make_unique<histogram>();
-
-        waviness_chart_->setAxisScale(QwtPlot::xBottom, 0, 2048);
-        waviness_chart_->setAxisMaxMajor(QwtPlot::xBottom, 30);
-        waviness_chart_->setAxisMaxMinor(QwtPlot::xBottom, 0);
-        waviness_chart_->setAxisScale(QwtPlot::yLeft, 0, 10);
-
-
-        QFont fontX;
-        fontX.setFamily(QStringLiteral("微软雅黑"));
-        fontX.setPointSize(5);
-        waviness_chart_->setAxisFont(QwtPlot::xBottom, fontX);
-        waviness_chart_->setTitle("波纹度");
-
-
-        ui->horizontalLayout_6->addWidget(waviness_chart_.get());
-
-
-    }
-}
-
-//线性曲线
-void PolarPlotShow::curveBightChart()
-{
-    /*清屏重绘*/
-//        ui->qwtPlot->detachItems();
-//        ui->qwtPlot->replot();
-
-    /*setAxisScale四个参数的含义分别是：坐标轴->坐标轴最小值->坐标轴最大值->步进*/
-    ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,100,10);
-    ui->qwtPlot->setAxisScale(QwtPlot::yLeft,0,10,2);
-    ui->qwtPlot->setAxisTitle(QwtPlot::xBottom,"x 轴(data)");
-    ui->qwtPlot->setAxisTitle(QwtPlot::yLeft,"y 轴(data)");
-
-
-
-}
-
-//显示极坐标图
-void PolarPlotShow::polar_diagram(QString range)
-{
-
-
-    if(plot==nullptr)
-    {
-        plot=std::make_unique<QwtPolarPlot>();
-
-        plot->setScale( QwtPolar::ScaleAzimuth, 0, 360, 30);
-        if(range=="+-50μm")
-        {
-             plot->setScale( QwtPolar::ScaleRadius, -50,50, 0.5);
-        }else if(range=="+-500μm")
-        {
-             plot->setScale( QwtPolar::ScaleRadius, -500,500, 0.5);
-        }
-        else if(range=="")
-        {
-            plot->setScale( QwtPolar::ScaleRadius, -2,2, 0.5);
-         }
-//        plot->setScale( QwtPolar::ScaleRadius, -2,2, 0.5);
-        QwtPolarGrid* grid=new QwtPolarGrid();
-        //    grid->setFont (QFont("Times", 16, QFont::Bold));
-        grid->setPen ( QPen(Qt::lightGray,1, Qt::DashDotLine) );
-        grid->setAxisPen ( QwtPolar::AxisAzimuth, QPen(Qt::black, 1) );
-        //grid.setAxisPen ( QwtPolar::AxisLeft, QPen(Qt::black, 1) );
-
-        grid->showGrid (QwtPolar::AxisAzimuth, true);
-        grid->showGrid (QwtPolar::AxisLeft, true);
-        grid->showGrid (QwtPolar::AxisRight, false);
-        grid->showGrid (QwtPolar::AxisTop, false);
-        grid->showGrid (QwtPolar::AxisBottom, false);
-        grid->attach(plot.get());
-
-                ui->verticalLayout_3->addWidget(plot.get());
-
-    }
-
-    if(range=="+-50μm")
-    {
-         plot->setScale( QwtPolar::ScaleRadius, -50,50, 0.5);
-    }else if(range=="+-500μm")
-    {
-         plot->setScale( QwtPolar::ScaleRadius, -500,500, 0.5);
-    }
-    else if(range=="")
-    {
-        plot->setScale( QwtPolar::ScaleRadius, -2,2, 0.5);
-     }
-
-
-}
-
 //谐波添加数据
 void PolarPlotShow::histogramShow(QVector<double> value)
 {
@@ -831,18 +807,10 @@ void PolarPlotShow::histogramShow(QVector<double> value)
     grid->setMajorPen(QColor(193, 193, 193), 1, Qt::DashLine);
     grid->attach(histogram_chart_.get());
 
-    histogram_chart_->populate(value);
+
+    histogram_chart_->draw_histogram(value);
     histogram_chart_->replot();
-    //    for(int i=0;i<value.size();i++)
-    //    {
 
-    //        histogram_x_.push_back(i);
-    //        histogram_y_.push_back(value[i]);
-
-    //        bars_->setData(histogram_x_, histogram_y_);
-    //    }
-
-    //    ui->histogram_->replot();
 
 }
 
@@ -860,18 +828,7 @@ void PolarPlotShow::waviness(QVector<double> value)
 
     waviness_chart_->waviness(value);
     waviness_chart_->replot();
-    //    for(int i=0;i<fft_.amplitude_.size();i++)
-    //    {
 
-    //        waviness_x_.push_back(i);
-
-    //        double Individual_harmonic_waviness=51.833*fft_.amplitude_[i]*i;
-
-    //        waviness_y_.push_back(Individual_harmonic_waviness);
-
-    //        waviness_bars_->setData(waviness_x_, waviness_y_);
-    //    }
-    //    ui->waviness->replot();
 }
 
 
@@ -913,18 +870,6 @@ void PolarPlotShow::curveGraphShow(QVector<double> value)
     ui->qwtPlot->replot();
     ui->qwtPlot->setAutoReplot(true);   //自动更新
 
-    //    for(int i=0;i<value.size()-1;i++)
-    //    {
-    //        curve_x_.push_back(phase[i]);
-    //        curve_y_.push_back(value[i]);
-
-    //        ui->curve_graph_->graph(0)->setData(curve_x_, curve_y_);
-
-    //        ui->curve_graph_->xAxis->setLabel("x");
-    //        ui->curve_graph_->yAxis->setLabel("y");
-    //    }
-
-    //    ui->curve_graph_->replot();
 
 }
 
@@ -935,21 +880,9 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
         plot->detachItems();
 //        plot->replot();
 
+        start_=clock();
+
         polar_diagram(range);
-
-        QwtPolarGrid* grid=new QwtPolarGrid();
-
-        grid->setPen ( QPen(Qt::lightGray, 1, Qt::DashDotLine) );
-        grid->setAxisPen ( QwtPolar::AxisAzimuth, QPen(Qt::black, 1) );
-
-        grid->showGrid (QwtPolar::AxisAzimuth, true);
-        grid->showGrid (QwtPolar::AxisLeft, true);
-        grid->showGrid (QwtPolar::AxisRight, false);
-        grid->showGrid (QwtPolar::AxisTop, false);
-        grid->showGrid (QwtPolar::AxisBottom, false);
-        grid->attach(plot.get());
-
-        fft_.polarCoordinatesToCartesianCoordinates(value,0,0);
 
 
         QwtPolarCurve* curve_max=new QwtPolarCurve();
@@ -962,7 +895,7 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
         {
             data_radius_max.push_back(/*fft_.incircle_radius*/num_min_);
         }
-//        qDebug()<<"data_radius_max:"<<fft_.incircle_radius;
+
         data_max->get_data(data_radius_max);
         curve_max->setData (data_max);
         curve_max->attach(plot.get());
@@ -971,7 +904,6 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
         QwtPolarCurve* curve=new QwtPolarCurve();
         curve->setPen (QPen(Qt::blue, 1));
 
-//        plot.get()->setScale(QwtPolar::ScaleRadius, 5, 20, 1);     // 半径范围
 
         //测量数据
         GetPolarData* data=new GetPolarData();
@@ -979,11 +911,6 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
         curve->setData(data);
         curve->attach(plot.get());
 
-//        auto num=angularAxis_->center();
-//        qDebug()<<num;
-
-//        auto x=num.x();
-//        auto y=num.y();
 
         QwtPolarCurve* curve_=new QwtPolarCurve();
         curve_->setPen (QPen(Qt::red, 2));
@@ -993,9 +920,9 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
         QVector<double> data_radius;
         for(int i=0;i<value.size();i++)
         {
-            data_radius.push_back(fft_.tempPoint_.radius);
+              data_radius.push_back(leastsquare_radius_of_circle_);
         }
-        qDebug()<<fft_.tempPoint_.radius;
+        qDebug()<<leastsquare_radius_of_circle_;
         data_->get_data(data_radius);
         curve_->setData (data_);
         curve_->attach(plot.get());
@@ -1009,160 +936,35 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
         GetPolarData* data_min=new GetPolarData();
         QVector<double> data_radius_min;
         float min_radius_coverage=0;
-        if(num_max_>fft_.min_coverage_circle_.radius)
+        if(num_max_>minimum_radius_of_outer_circle_)
         {
             min_radius_coverage=num_max_;
         }
         else
         {
-            min_radius_coverage=fft_.min_coverage_circle_.radius;
+            min_radius_coverage=minimum_radius_of_outer_circle_;
         }
         qDebug()<<"min_radius_coverage:"<<min_radius_coverage;
         for(int i=0;i<value.size();i++)
         {
-            data_radius_min.push_back(fft_.min_coverage_circle_.radius);
+            data_radius_min.push_back(minimum_radius_of_outer_circle_);
         }
-        qDebug()<<fft_.min_coverage_circle_.radius;
+        qDebug()<<minimum_radius_of_outer_circle_;
         data_min->get_data(data_radius_min);
         curve_min->setData (data_min);
         curve_min->attach(plot.get());
 
         plot->replot();
 
-//        data_radius.clear();
-
-
-
-//        ui->verticalLayout_3->addWidget(plot.get());
-
-
-//    auto value_float=float(value.size());
-
-//    for(int i=0;i<value.size();i++)
-//    {
-//        auto num_=i/value_float*360.0;
-
-//        g1_->addData(/*(i/value.size())*360*//*value[i]**/i/value_float*360.0/*(i/value.size())*360*/,value[i]);
-//    }
-
-//        auto num=angularAxis_->center();
-//        qDebug()<<num;
-
-//        auto x=num.x();
-//        auto y=num.y();
-//        fft_.polarCoordinatesToCartesianCoordinates(value,x,y);
-
-//    //    qDebug()<<angularAxis_->radius();
-
-
-//        for(int i=0;i<value.size();i++)
-//        {
-//            g2_->addData(/*(i/value.size())*360*//*value[i]**//*phase_angle[i]*/i/value_float*360.0,fft_.tempPoint_.radius);
-
-//        }
-
-
-
-
-    //    ui->verticalLayout_3->addWidget(plot);
-
-    //    for(int i=0;i<value.size();i++)
-    //    {
-    //        g3_->addData(/*(i/value.size())*360*//*value[i]**//*phase_angle[i]*/i/value_float*360.0,fft_.min_coverage_circle_.radius/*qSin(i/100.0*M_PI*8)*8+1*/);
-
-    //    }
-
-    //    for(int i=0;i<value.size();i++)
-    //    {
-    //        g4_->addData(/*(i/value.size())*360*//*value[i]**//*phase_angle[i]*/i/value_float*360.0,num_min_);
-
-    //    }
-
-    //    qDebug()<<fft_.tempPoint_.radius;
-    //    qDebug()<<fft_.min_coverage_circle_.radius;
-    //    qDebug()<<angularAxis->bottomRight();
-
-    //     LeastSquaresCircle();
-
+        end_=clock();		//程序结束用时
+        double endtime_=(double)(end_-start_)/CLOCKS_PER_SEC;
+        qDebug()<<"poleDiagramDisplay()画极图结束时间："<<endtime_<<"\n";
 
 }
 
 
 void PolarPlotShow::startToPrepare()
 {
-
-    //曲线图
-    ui->curve_graph_->addGraph();
-
-    ui->curve_graph_->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);  //用户可以通过拖拽坐标轴和滑动滚轮的方式来缩放图像
-
-    //波纹度
-    //    waviness_xAxis_ = ui->waviness->xAxis;
-    //    waviness_yAxis_ = ui->waviness->yAxis;
-    //    waviness_bars_ = new QCPBars( ui->waviness->xAxis,  ui->waviness->yAxis);
-
-    //    waviness_bars_->setAntialiased(false); // 为了更好的边框效果，关闭抗齿锯
-    //    waviness_bars_->setPen(QPen(QColor(0, 160, 140).lighter(130))); // 设置柱状图的边框颜色
-    //    waviness_bars_->setBrush(QColor(20,68,106));  // 设置柱状图的画刷颜色
-
-    //    ui->waviness->xAxis->setTickLength(0,1);          // 轴内外刻度的长度分别是0,1,也就是轴内的刻度线不显示
-
-    //    ui->waviness->xAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
-
-    //    ui->waviness->yAxis->setPadding(35);             // 轴的内边距
-    //    ui->waviness->yAxis->setLabel("y");
-    //    ui->waviness->yAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
-
-    //柱形图
-    //    xAxis_ = ui->histogram_->xAxis;
-    //    yAxis_ = ui->histogram_->yAxis;
-    //    bars_ = new QCPBars( ui->histogram_->xAxis,  ui->histogram_->yAxis);
-
-    //    bars_->setAntialiased(false); // 为了更好的边框效果，关闭抗齿锯
-    //    bars_->setPen(QPen(QColor(0, 160, 140).lighter(130))); // 设置柱状图的边框颜色
-    //    bars_->setBrush(QColor(20,68,106));  // 设置柱状图的画刷颜色
-
-    //    ui->histogram_->xAxis->setTickLength(0,1);          // 轴内外刻度的长度分别是0,1,也就是轴内的刻度线不显示
-
-    //    ui->histogram_->xAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
-
-    //    ui->histogram_->yAxis->setPadding(35);             // 轴的内边距
-    //    ui->histogram_->yAxis->setLabel("y");
-    //    ui->histogram_->yAxis->setUpperEnding(QCPLineEnding::esSpikeArrow);
-
-
-    //极图显示
-//    ui->circle_graph->plotLayout()->clear();
-
-
-//    /*QCPPolarAxisAngular **/angularAxis_ = new QCPPolarAxisAngular(ui->circle_graph);
-//    ui->circle_graph->plotLayout()->addElement(0, 0, angularAxis_);
-
-//    ui->circle_graph->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);  //用户可以通过拖拽坐标轴和滑动滚轮的方式来缩放图像
-
-
-//    angularAxis_->setTickLabelMode(QCPPolarAxisAngular::lmUpright);
-
-//    angularAxis_->radialAxis()->setTickLabelMode(QCPPolarAxisRadial::lmUpright);
-
-
-//    /* QCPPolarGraph **/g1_ = new QCPPolarGraph(angularAxis_, angularAxis_->radialAxis());
-//    g2_ = new QCPPolarGraph(angularAxis_, angularAxis_->radialAxis());
-
-//    g3_ = new QCPPolarGraph(angularAxis_, angularAxis_->radialAxis());
-
-//    g4_ = new QCPPolarGraph(angularAxis_, angularAxis_->radialAxis());
-
-//    g2_->setPen(QPen(QColor(255, 0, 0)/*.lighter(130)*/));
-
-//    g3_->setPen(QPen(QColor(255, 0, 0)/*.lighter(130)*/));
-
-//    g4_->setPen(QPen(QColor(255, 0, 0)/*.lighter(130)*/));
-//    //g1->setScatterStyle(/*QCPScatterStyle::ssCross*//*ssDisc*/QCPScatterStyle(QCPScatterStyle::ssCircle, 2));
-
-//    angularAxis_->radialAxis()->setRange(0, 2000);
-
-
 
 
 
@@ -2031,9 +1833,9 @@ void PolarPlotShow::areaOfRemarksMenu()
 void PolarPlotShow::show_time()
 {
     QDateTime time = QDateTime::currentDateTime();
-    QString str = time.toString("yyyy.MM.dd hh:mm:ss dddd");
+    /*QString str*/str_time_ = time.toString("yyyy.MM.dd hh:mm:ss dddd");
 
-    ui->label_time_circle->setText(str);
+    ui->label_time_circle->setText(str_time_);
     //    show_time_label_->setText(str);
 
     //    ui->statusbar->addPermanentWidget(show_time_label_);

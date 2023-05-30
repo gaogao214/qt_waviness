@@ -31,13 +31,6 @@
 
 #include <thread>
 
-#ifdef _WIN32
-#define sleep Sleep
-#else
-#include "msxe371x_modbus_clientlib.h"
-#include <unistd.h>
-#endif
-
 #define __INCvxWorksh
 #endif /*end of __INCvxWorksh*/
 
@@ -50,72 +43,29 @@ MainWindow::MainWindow(QWidget *parent)
     qRegisterMetaType<struct modbus>("struct modbus");
 
     real_time_=std::make_unique<QTimer>(this);
-    connect(real_time_.get(),SIGNAL(timeout()),this,SLOT(show_time()));
+    connect(real_time_.get(),SIGNAL(timeout()),this,SLOT(showTime()));
     real_time_->start(1000);
 
     initStatusBar();//初始化状态栏
 
     initFunctionKey();//初始化功能键栏
-//    show_time_label_=new QLabel(this);      //状态栏显示时间
-//    show_part_count_label_=new QLabel(this);//状态栏显示计件数
-//    show_connect_information_=new QLabel(this);//状态栏显示连接状态
 
+    connect(ui->polar_diagram,&QAction::triggered,this,&MainWindow::poleDiagramPushButtonClicked);
+    connect(ui->spectrogram,&QAction::triggered,this,&MainWindow::graphPushButtonClicked);
+    connect(ui->statistical_report,&QAction::triggered,this,&MainWindow:: statisticalReportClicked);
 
-//    show_connect_information_=std::make_unique<QLabel>(this);
-//    show_part_count_label_=std::make_unique<QLabel>(this);//状态栏显示计件数
-//    show_part_count_label_->setText("n= 0 ");
-//    ui->statusbar->addPermanentWidget(show_part_count_label_.get());
-//    ui->statusbar->addPermanentWidget(show_connect_information_.get());
+    // 线程
+    if(controller_==nullptr)
+    {
+        controller_=std::make_unique<controller>();
+        connect(controller_.get(),&controller::signal_msx_data,this,&MainWindow::reciveMsxe3711Data);
+        connect(controller_.get(),&controller::signal_msx_measurement_point,this,&MainWindow::getMSXE3711MeasurementPoint);
+        connect(controller_.get(),&controller::signal_msx_sensor_type,this,&MainWindow::reciveSensorType);
+        connect(controller_.get(),&controller::signal_msx_channel,this,&MainWindow::reciveMsxE3711Channel);
+        connect(controller_.get(),&controller::signal_msx_evaluation_criterion,this,&MainWindow::getMSXE3711EvaluationCriterion);
+    }
 
-//    if(config_polar_plot_==nullptr)
-//    {
-//           config_polar_plot_=std::make_unique<PolarPlotShow>();   //默认显示极图页面
-//    }
-
-//    ui->verticalLayout->addWidget(config_polar_plot_.get());
-
-//    //功能键
-//    if(function_key_==nullptr)
-//    {
-//        function_key_=std::make_unique<function_key>();
-//        connect(function_key_.get(),SIGNAL(signal_F9()),this,SLOT(on_start_measuring_triggered()));
-//        connect(function_key_.get(),SIGNAL(signal_config_F8()),this,SLOT(configurePopover()));
-//        connect(function_key_.get(),SIGNAL(signal_pole_diagram_F5()),this,SLOT(pole_diagram_pushButton_clicked()));
-//        connect(function_key_.get(),SIGNAL(signal_graph_F6()),this,SLOT( graph_pushButton_clicked()));
-//        connect(function_key_.get(),SIGNAL(signal_F3()),this,SLOT(configuration_Button_clicked()));
-//        connect(function_key_.get(),SIGNAL(signal_F4()),this,SLOT(pushButton_4_clicked()));
-//        connect(function_key_.get(),SIGNAL(signal_F10()),this,SLOT(pushButton_10_clicked()));
-//    }
-
-//    ui->horizontalLayout->addWidget(function_key_.get());
-
-//    //F6
-//    config_graph_=std::make_unique<new_profile>();
-
-//    ui->verticalLayout->addWidget(config_graph_.get());
-
-//    config_graph_->hide();
-
-//    //统计报告
-//    if(report_==nullptr)
-//    {
-//      report_=std::make_unique<statistical_report>();
-//    }
-//    ui->verticalLayout->addWidget(report_.get());
-//    report_->hide();
-
-
-////    connect(ui->connect_pushButton,&QPushButton::clicked,this,&MainWindow::on_start_measuring_triggered);
-
-////    displacement_data_.push_back(0);
-
-//    //    config_polar_plot_->maindowThreadData(displacement_data_);
-//    if (config_configure_ == nullptr)//配置
-//    {
-//      config_configure_=std::make_unique<configuration>();
-//      connect(config_configure_.get(), SIGNAL(signalResultAreaArribute(QVector<table_config>)), config_polar_plot_.get(), SLOT(reciveResultAreaAttribute_(QVector<table_config>)));
-//      connect(config_configure_.get(), SIGNAL(signal_recognition_config(recognition_config)), config_polar_plot_.get(), SLOT(recive_recogntion_config(recognition_config)));
-//    }
+//    emit controller_->msx_connect();
 
 }
 
@@ -124,7 +74,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::show_time()
+void MainWindow::showTime()
 {
     QDateTime time = QDateTime::currentDateTime();
     QString str = time.toString("yyyy-MM-dd hh:mm:ss dddd");
@@ -149,25 +99,33 @@ void MainWindow::initStatusBar()
 //初始化功能键栏
 void MainWindow::initFunctionKey()
 {
-    //功能键栏
     if(function_key_==nullptr)
     {
         function_key_=std::make_unique<function_key>();
         connect(function_key_.get(),SIGNAL(signal_F9()),this,SLOT(on_start_measuring_triggered()));
         connect(function_key_.get(),SIGNAL(signal_config_F8()),this,SLOT(configurePopover()));
-        connect(function_key_.get(),SIGNAL(signal_pole_diagram_F5()),this,SLOT(pole_diagram_pushButton_clicked()));
-        connect(function_key_.get(),SIGNAL(signal_graph_F6()),this,SLOT( graph_pushButton_clicked()));
-        connect(function_key_.get(),SIGNAL(signal_F3()),this,SLOT(configuration_Button_clicked()));
-        connect(function_key_.get(),SIGNAL(signal_F4()),this,SLOT(pushButton_4_clicked()));
+        connect(function_key_.get(),SIGNAL(signal_pole_diagram_F5()),this,SLOT(poleDiagramPushButtonClicked()));
+        connect(function_key_.get(),SIGNAL(signal_graph_F6()),this,SLOT( graphPushButtonClicked()));
+        connect(function_key_.get(),SIGNAL(signal_F3()),this,SLOT(configurationButtonClicked()));
+        connect(function_key_.get(),SIGNAL(signal_F4()),this,SLOT(statisticalReportClicked()));
         connect(function_key_.get(),SIGNAL(signal_F10()),this,SLOT(pushButton_10_clicked()));
     }
-
     ui->horizontalLayout->addWidget(function_key_.get());
+
+    //初始化校准页面
+    if(calibration_==nullptr)
+    {
+        calibration_=std::make_unique<calibration>();
+    }
 
     //默认显示极图页面 F5 (在主页面显示)
     if(config_polar_plot_==nullptr)
     {
          config_polar_plot_=std::make_unique<PolarPlotShow>();
+
+         connect(config_polar_plot_.get(),SIGNAL(signalLSCrToController(QString,QString)),calibration_.get(),SLOT(measuringLSCrResult(QString,QString)));
+
+
     }
     ui->verticalLayout->addWidget(config_polar_plot_.get());
     config_polar_plot_->show();
@@ -177,7 +135,7 @@ void MainWindow::initFunctionKey()
     {
       config_configure_=std::make_unique<configuration>();
       connect(config_configure_.get(), SIGNAL(signalResultAreaArribute(QVector<table_config>)), config_polar_plot_.get(), SLOT(reciveResultAreaAttribute_(QVector<table_config>)));
-      connect(config_configure_.get(), SIGNAL(signal_recognition_config(recognition_config)), config_polar_plot_.get(), SLOT(recive_recogntion_config(recognition_config)));
+      connect(config_configure_.get(), SIGNAL(signal_recognition_config(recognition_config)), config_polar_plot_.get(), SLOT(reciveRecogntionConfig(recognition_config)));
     }
 
     // F4 统计报告 (在主页面显示)
@@ -198,32 +156,30 @@ void MainWindow::initFunctionKey()
 
 }
 
-void MainWindow::windowtitle(QString title)
+//标题栏
+void MainWindow::windowTitle(QString title)
 {
-    setWindowTitle("波纹度仪");//标题栏
+    setWindowTitle("波纹度仪");
 }
 
 //按下按钮 开始测量
 void MainWindow::on_start_measuring_triggered()
 {
-
-//    controller* controller_=new controller();
+    // 线程
     if(controller_==nullptr)
     {
         controller_=std::make_unique<controller>();
-        connect(controller_.get(),&controller::signal_msx_data,this,&MainWindow::recive_msxe3711_data);
+        connect(controller_.get(),&controller::signal_msx_data,this,&MainWindow::reciveMsxe3711Data);
+        connect(controller_.get(),&controller::signal_msx_measurement_point,this,&MainWindow::getMSXE3711MeasurementPoint);
+        connect(controller_.get(),&controller::signal_msx_sensor_type,this,&MainWindow::reciveSensorType);
+        connect(controller_.get(),&controller::signal_msx_channel,this,&MainWindow::reciveMsxE3711Channel);
+        connect(controller_.get(),&controller::signal_msx_evaluation_criterion,this,&MainWindow::getMSXE3711EvaluationCriterion);
     }
-
     emit controller_->operate_msx_data();
 
+    qDebug() << "MainWindow()"<< "thread:" << QThread::currentThreadId();
+
     loadingMeasurement();//加载中
-
-//    displacement_data_.clear();
-
-
-//    QString range=ui->comboBox_2->currentText();
-
-//    config_polar_plot_->maindowThreadData(displacement_data_,range);
 
     part_count_++;//计件数
 
@@ -232,6 +188,7 @@ void MainWindow::on_start_measuring_triggered()
 
 }
 
+//加载中
 void MainWindow::loadingMeasurement()
 {
     // show delay dialog
@@ -253,21 +210,45 @@ void MainWindow::loadingMeasurement()
     delay_dialog_->exec();
 }
 
-void MainWindow::recive_msxe3711_data(QVector<double> data)
+void MainWindow::getMSXE3711MeasurementPoint(double data)
+{
+    ui->label_4->setNum(data);
+}
+
+void MainWindow::reciveSensorType(QString sensor)
+{
+    transducer_name_=sensor;
+}
+
+void MainWindow::reciveMsxE3711Channel(QString channel)
+{
+    ui->transducer_label->setText(channel);
+}
+
+void MainWindow::getMSXE3711EvaluationCriterion(double leastsquare_radius_of_circle,double minimum_radius_of_outer_circle)
+{
+
+    config_polar_plot_->MSXE3711EvaluationCriterion(leastsquare_radius_of_circle,minimum_radius_of_outer_circle);
+}
+
+
+void MainWindow::reciveMsxe3711Data(QVector<double> data,QVector<double> amplitude)
 {
     qDebug()<<"recive_msxe3711_data!\n";
 
-
     QString range=ui->comboBox_2->currentText();
 
-    config_polar_plot_->maindowThreadData(data,"2000");
+    config_polar_plot_->maindowThreadData(data,amplitude,range);//极图半径范围
+
+//    connect(config_polar_plot_.get(),SIGNAL(signalLSCrToController(QString)),calibration_.get(),SLOT(measuringLSCrResult(QString)));
+
 
     config_polar_plot_->theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCriteria(config_configure_.get()->tab_band_);
 
     report_->tableWidgetAddData(config_polar_plot_->vec_tab_config);
     report_->recognition_data(config_polar_plot_->widget_config_);
 
-    finishedMeasurement();
+    finishedMeasurement();//加载完成
 }
 
 void MainWindow::finishedMeasurement()
@@ -290,8 +271,8 @@ void MainWindow::finishedMeasurement()
     }
 }
 
-//F4
-void MainWindow::pushButton_4_clicked()
+//F4 统计报告
+void MainWindow::statisticalReportClicked()
 {
     config_polar_plot_->hide();
 
@@ -300,8 +281,8 @@ void MainWindow::pushButton_4_clicked()
     report_->show();
 }
 
-//F5
-void MainWindow::pole_diagram_pushButton_clicked()
+//F5 显示极图
+void MainWindow::poleDiagramPushButtonClicked()
 {
     config_polar_plot_->show();
 
@@ -311,8 +292,8 @@ void MainWindow::pole_diagram_pushButton_clicked()
 
 }
 
-//F6
-void MainWindow::graph_pushButton_clicked()
+//F6 显示光谱图
+void MainWindow::graphPushButtonClicked()
 {
     config_graph_->show();
     report_->hide();
@@ -410,7 +391,7 @@ void MainWindow::on_new_profile_triggered()
         qDebug() << settings->value("Criterias/ClassNames");
 
 
-        QDir path; // 创建一个QDir变量
+        QDir path; // 创建一个.mwa配置文件 同时创建一个同名的文件夹
 
         auto num=filename_mwa_.size()-4;//获取路径名
         auto file=filename_mwa_.mid(0,filename_mwa_.size()-4);
@@ -431,7 +412,6 @@ void MainWindow::on_new_profile_triggered()
 void MainWindow::on_measurement_task_triggered()
 {
 
-//    measurement_task *config_task_=new measurement_task();
     if(config_task_.get()==nullptr)
     {
         config_task_=std::make_unique<measurement_task>();
@@ -452,11 +432,11 @@ void MainWindow::on_exit_triggered()
 
 }
 
+//配置
 void MainWindow::configurePopover()
 {
     if (config_configure_ == nullptr)
     {
-
         config_configure_=std::make_unique<configuration>();
         config_configure_->configuration_filename_mwa_=filename_mwa_;
         config_configure_->setWindowModality(Qt::ApplicationModal); //顶层模态
@@ -474,18 +454,22 @@ void MainWindow::configurePopover()
 
 }
 
+//配置-》配置
 void MainWindow::on_config_action1_triggered()
 {
     configurePopover();
 }
 
-void MainWindow::configuration_Button_clicked()
+//F8
+void MainWindow::configurationButtonClicked()
 {
     config_configure_->show();
 }
 
+//打印机
 void MainWindow::on_action1_12_triggered()
 {
+
     QPrinter printerpng;//创建一个打印机
     QPrintDialog dlg(&printerpng);//创建打印页面，并传入打印机
     qDebug()<<dlg.exec();//显示打印界面，返回值判断点击的是0表示取消，1表示打印
@@ -501,36 +485,6 @@ void MainWindow::on_action1_13_triggered()
 
 }
 
-//统计报告
-void MainWindow::on_action1_28_triggered()
-{
-    config_polar_plot_->hide();
-
-    config_graph_->hide();
-
-    report_->show();
-
-}
-
-//显示极图
-void MainWindow::on_action1_25_triggered()
-{
-
-    config_polar_plot_->show();
-
-    report_->hide();
-
-    config_graph_->hide();
-}
-
-//显示光谱
-void MainWindow::on_action1_26_triggered()
-{
-    config_graph_->show();
-    report_->hide();
-    config_polar_plot_->hide();
-}
-
 //F10
 void MainWindow::pushButton_10_clicked()
 {
@@ -541,7 +495,77 @@ void MainWindow::pushButton_10_clicked()
     report_->show();
 }
 
-void MainWindow::on_action1_9_triggered()
+void MainWindow::calibrationMeasurement()
+{
+    config_polar_plot_->reciveFlag(true);
+
+    on_start_measuring_triggered();
+}
+
+//校准页面
+void MainWindow::reciveCalibration()
+{
+    QStringList list = transducer_name_.split("/");//获取传感器的名字
+
+    if(calibration_==nullptr)
+    {
+        calibration_=std::make_unique<calibration>();
+
+    }
+
+    calibration_->combox_additem(list[0]);
+    calibration_->show_profile(profile_fileName_);
+    calibration_->setWindowModality(Qt::ApplicationModal); //顶层模态
+
+    connect(calibration_.get(),SIGNAL(signalMeasurement()),this,SLOT(calibrationMeasurement()));
+    connect(calibration_.get(),SIGNAL(signalRange(QString)),config_polar_plot_.get(),SLOT(polar_diagram(QString)));
+    connect(calibration_.get(),SIGNAL(signalResultsAreaDisplayed(QVector<table_config>)),config_polar_plot_.get(),SLOT(reciveResultAreaAttribute_(QVector<table_config>)));
+    connect(calibration_.get(),SIGNAL(signalRange(QString)),this,SLOT(comboBox_2_show(QString)));
+    connect(calibration_.get(),SIGNAL(signal_calibration_quit()),this,SLOT(calibrationQuit()));
+    connect(calibration_.get(),SIGNAL(signalSmallCalibration(float)),config_polar_plot_.get(),SLOT(reciveSmallCalibration(float)));
+    connect(calibration_.get(),SIGNAL(signalLargeCalibration(float)),config_polar_plot_.get(),SLOT(reciveLargeCalibration(float)));
+
+
+    ui->verticalLayout_2->addWidget(calibration_.get());
+    function_key_->hide();
+}
+
+//校准关闭
+void MainWindow::calibrationQuit()
+{
+    calibration_->hide();
+    function_key_->show();
+
+    config_polar_plot_->reciveFlag(false);
+}
+
+//范围
+void MainWindow::comboBox_2_show(QString num)
+{
+    ui->comboBox_2->setCurrentIndex(ui->comboBox_2->findText(num));
+}
+
+
+void MainWindow::on_comboBox_2_activated(const QString &arg1)
+{
+    qDebug()<<arg1;
+    config_polar_plot_->polar_diagram(arg1);
+}
+
+//校准密码
+void MainWindow::on_calibration_password_triggered()
+{
+    calibration_password* password_=new calibration_password();
+
+    password_->setWindowModality(Qt::ApplicationModal); //顶层模态
+
+    connect(password_, SIGNAL(signal_password()),this, SLOT(reciveCalibration()));
+
+    password_->show();
+}
+
+//新建->打开-》配置
+void MainWindow::on_open_configuration_triggered()
 {
     profile_fileName_ = QFileDialog::getOpenFileName(
             this,
@@ -560,67 +584,8 @@ void MainWindow::on_action1_9_triggered()
         }
 }
 
-//配置密码
-void MainWindow::on_action12_4_triggered()
-{
-    calibration_password* password_=new calibration_password();
-
-
-    password_->setWindowModality(Qt::ApplicationModal); //顶层模态
-
-
-    connect(password_, SIGNAL(signal_password()),this, SLOT(recive_calibration()));
-
-    password_->show();
-
-}
-
-//校准页面
-void MainWindow::recive_calibration()
-{
-    //auto pos=qFind(transducer_name_.begin(),transducer_name_.end(),'/');
-    QStringList list = transducer_name_.split("/");//获取传感器的名字
-
-    if(calibration_==nullptr)
-    {
-        calibration_=std::make_unique<calibration>();
-        calibration_->combox_additem(list[0]);
-        calibration_->show_profile(profile_fileName_);
-        calibration_->setWindowModality(Qt::ApplicationModal); //顶层模态
-
-        connect(calibration_.get(),SIGNAL(signalMeasurement()),this,SLOT(on_start_measuring_triggered()));
-        connect(calibration_.get(),SIGNAL(signalRange(QString)),config_polar_plot_.get(),SLOT(polar_diagram(QString)));
-        connect(calibration_.get(),SIGNAL(signalResultsAreaDisplayed(QVector<table_config>)),config_polar_plot_.get(),SLOT(reciveResultAreaAttribute_(QVector<table_config>)));
-        connect(calibration_.get(),SIGNAL(signalRange(QString)),this,SLOT(comboBox_2_show(QString)));
-        connect(calibration_.get(),SIGNAL(signal_calibration_quit()),this,SLOT(calibration_quit()));
-
-        ui->verticalLayout_2->addWidget(calibration_.get());
-    }
-    function_key_->hide();
-
-
-}
-
-void MainWindow::calibration_quit()
-{
-    calibration_->hide();
-    function_key_->show();
-}
-
-void MainWindow::comboBox_2_show(QString num)
-{
-    ui->comboBox_2->setCurrentIndex(ui->comboBox_2->findText(num));
-//    ui->comboBox_2->addItem(num);
-}
-
-void MainWindow::on_comboBox_2_activated(const QString &arg1)
-{
-
-    qDebug()<<arg1;
-    config_polar_plot_->polar_diagram(arg1);
-}
-
-void MainWindow::on_action1_10_triggered()
+//新建-》打开-》测量作业
+void MainWindow::on_open_measurement_job_triggered()
 {
     if(config_task_.get()==nullptr)
     {
@@ -631,38 +596,37 @@ void MainWindow::on_action1_10_triggered()
 
     config_task_->setWindowModality(Qt::ApplicationModal);
     config_task_->show();
-
 }
 
-void MainWindow::on_action1_triggered()
+//新建-》另存为-》配置
+void MainWindow::on_save_as_configuration_triggered()
 {
 
-   QString newFilePath = QFileDialog::getSaveFileName(this,tr("另存为"),"","*.mwa"); //选择路径
-   qDebug()<<newFilePath;
+    QString newFilePath = QFileDialog::getSaveFileName(this,tr("另存为"),"","*.mwa"); //选择路径
+    qDebug()<<newFilePath;
 
 
-     QString filePath;
-     QStringList pathList=newFilePath.split("/");//用于检查新路径是否存在
-     QString dir;
-     for(int i;i<pathList.size();i++)
-     {
-         if(i!=pathList.size()-1)
-         {
-             dir+=pathList[i];
-             dir+="/";
-         }
-     }
-     QDir path(dir);
-     if(path.exists())
-     {
-         QFile file(profile_fileName_);
-         file.copy(profile_fileName_,newFilePath);
-     }
-     else
-     {
-         path.mkdir(dir);//若路径不存在则创建不存在的文件夹
-         QFile file(profile_fileName_);
-         file.copy(profile_fileName_,newFilePath);
-     }
-
+      QString filePath;
+      QStringList pathList=newFilePath.split("/");//用于检查新路径是否存在
+      QString dir;
+      for(int i;i<pathList.size();i++)
+      {
+          if(i!=pathList.size()-1)
+          {
+              dir+=pathList[i];
+              dir+="/";
+          }
+      }
+      QDir path(dir);
+      if(path.exists())
+      {
+          QFile file(profile_fileName_);
+          file.copy(profile_fileName_,newFilePath);
+      }
+      else
+      {
+          path.mkdir(dir);//若路径不存在则创建不存在的文件夹
+          QFile file(profile_fileName_);
+          file.copy(profile_fileName_,newFilePath);
+      }
 }

@@ -13,6 +13,9 @@ statistical_report::statistical_report(QWidget *parent) :
 {
     ui->setupUi(this);
 
+//    QTableWidgetItem* pItem = ui->tableWidget->item(ui->tableWidget->rowCount(), ui->tableWidget->columnCount());
+//    pItem->setFlags(pItem->flags() & (~Qt::ItemIsEditable));
+    ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     QTimer *timer_calendar;
     timer_calendar=new QTimer(this);

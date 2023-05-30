@@ -20,6 +20,9 @@ calibration::calibration(QWidget *parent) :
     connect(timer_calendar,SIGNAL(timeout()),this,SLOT(show_time()));
     timer_calendar->start(1000);
 
+    ui->lineEdit_24->setText("1.0");
+    ui->lineEdit_25->setText("1.0");
+
 }
 
 calibration::~calibration()
@@ -37,7 +40,7 @@ void calibration::show_time()
 }
 void calibration::on_pushButton_18_clicked()
 {
-       this->close();
+    this->close();
 
 
     QSettings setting(profile_filename_, QSettings::IniFormat);
@@ -108,6 +111,23 @@ void calibration::on_pushButton_22_clicked()
 
     config_.push_back(con_);
 
+    QSettings setting(profile_filename_, QSettings::IniFormat);
+
+    QString str=ui->lineEdit_20->text();
+    setting.setValue("CALIBRATION/MasterPartNr",str);
+
+    str=ui->lineEdit_21->text();
+    setting.setValue("CALIBRATION/MasterPartValue",str);
+
+    str=ui->lineEdit_26->text();
+    setting.setValue("CALIBRATION/SmallMasterPartLastTime",str);
+    str=ui->lineEdit_27->text();
+    setting.setValue("CALIBRATION/BigMasterPartLastTime",str);
+
+
+
+    setting.sync();//写入配置文件
+
     emit signalResultsAreaDisplayed(config_);
     emit signalRange( ui->lineEdit_22->text());
 
@@ -130,6 +150,23 @@ void calibration::on_pushButton_23_clicked()
      con_.secondary_criteria="△r";
 
      config_.push_back(con_);
+
+     QSettings setting(profile_filename_, QSettings::IniFormat);
+
+     QString str=ui->lineEdit_20->text();
+     setting.setValue("CALIBRATION/MasterPartNr",str);
+
+     str=ui->lineEdit_21->text();
+     setting.setValue("CALIBRATION/MasterPartValue",str);
+
+     str=ui->lineEdit_26->text();
+     setting.setValue("CALIBRATION/SmallMasterPartLastTime",str);
+     str=ui->lineEdit_27->text();
+     setting.setValue("CALIBRATION/BigMasterPartLastTime",str);
+
+
+
+     setting.sync();//写入配置文件
 
      emit signalResultsAreaDisplayed(config_);
      emit signalRange( ui->lineEdit_23->text());
@@ -165,4 +202,54 @@ void calibration::show_profile(QString filename)
 
     str=settings->value("CALIBRATION/BigMasterPartLastTime").toString();
     ui->lineEdit_27->setText(str);
+}
+
+void calibration::measuringLSCrResult(QString data,QString range)
+{
+    qDebug()<<"measuringLSCrResult()range:"<<range<<"\n";
+
+    QString str=ui->lineEdit_21->text();//标定值
+
+    QString lsc= data.mid(6,data.size());//测量值
+
+    qDebug()<<"measuringLSCrResult()信号槽接收到"<<lsc<<"\n";
+
+    float lsc_=lsc.toFloat();
+    data = QString::number(lsc_, 'f', 2);
+
+
+
+    if(data!=str)
+    {
+        if(range=="+-50μm")
+        {
+            small_amplification_coefficient_=str.toFloat()/lsc_;//放大系数
+
+            qDebug()<<"measuringLSCrResult() amplification:"<<small_amplification_coefficient_<<"\n";
+
+            ui->lineEdit_24->setText(QString::number(small_amplification_coefficient_));//放大系数显示
+
+        }else if(range=="+-500μm")
+        {
+            large_amplification_coefficient_=str.toFloat()/lsc_;//放大系数
+
+            qDebug()<<"measuringLSCrResult() amplification:"<<large_amplification_coefficient_<<"\n";
+
+            ui->lineEdit_25->setText(QString::number(large_amplification_coefficient_));//放大系数显示
+        }
+
+
+    }
+
+
+}
+
+void calibration::on_small_calibration_clicked()
+{
+    emit signalSmallCalibration(small_amplification_coefficient_);
+}
+
+void calibration::on_large_calibration_clicked()
+{
+    emit signalLargeCalibration(large_amplification_coefficient_);
 }

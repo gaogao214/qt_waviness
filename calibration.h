@@ -36,8 +36,13 @@ private slots:
 
     void show_time();
 
+    void measuringLSCrResult(QString data,QString range);
 
     void on_pushButton_23_clicked();
+
+    void on_small_calibration_clicked();
+
+    void on_large_calibration_clicked();
 
 signals:
     void signalMeasurement();
@@ -47,6 +52,10 @@ signals:
 
     void signal_calibration_quit();
 
+    void signalSmallCalibration(float);
+
+    void signalLargeCalibration(float);
+
 private:
     Ui::calibration *ui;
 
@@ -54,6 +63,9 @@ public:
     QString type_;
     QString str_time_ ;
     QString profile_filename_;
+
+    float small_amplification_coefficient_;
+    float large_amplification_coefficient_;
 };
 
 #endif // CALIBRATION_H

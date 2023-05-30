@@ -20,7 +20,6 @@ DEFINES += QWT_DLL QWT_POLAR_DLL
 SOURCES += \
     add_criteria.cpp \
     aes.c \
-    aiming_screen.cpp \
     calibration.cpp \
     calibration_password.cpp \
     chart.cpp \
@@ -30,12 +29,14 @@ SOURCES += \
     configuration.cpp \
     controller.cpp \
     curve_grap_show.cpp \
+    evaluation_criterion.cpp \
     fft.cpp \
     formdoc.cpp \
     function_key.cpp \
     get_msxe3711_data.cpp \
     histogram.cpp \
     identify_area_attributes.cpp \
+    image_controller.cpp \
     main.cpp \
     mainwindow.cpp \
     measurement_task.cpp \
@@ -48,6 +49,7 @@ SOURCES += \
     polar_plot_show.cpp \
     property_of_curve.cpp \
     qcustomplot.cpp \
+    qwt_draw.cpp \
     result_area_attribute.cpp \
     statistical_report.cpp \
     time.c
@@ -56,7 +58,6 @@ HEADERS += \
     add_criteria.h \
     addidata_network.h \
     aes.h \
-    aiming_screen.h \
     calibration.h \
     calibration_password.h \
     chart.h \
@@ -66,14 +67,15 @@ HEADERS += \
     configuration.h \
     controller.h \
     curve_grap_show.h \
+    evaluation_criterion.h \
     fft.h \
     formdoc.h \
     function_key.h \
-    get_data_for_msx3711.h \
     get_msxe3711_data.h \
     get_polar_data.h \
     histogram.h \
     identify_area_attributes.h \
+    image_controller.h \
     mainwindow.h \
     measurement_task.h \
     modbus_clientlib.h \
@@ -85,13 +87,13 @@ HEADERS += \
     profile.h \
     property_of_curve.h \
     qcustomplot.h \
+    qwt_draw.h \
     result_area_attribute.h \
     statistical_report.h \
     stdint_compat.h
 
 FORMS += \
     add_criteria.ui \
-    aiming_screen.ui \
     calibration.ui \
     calibration_password.ui \
     chart.ui \

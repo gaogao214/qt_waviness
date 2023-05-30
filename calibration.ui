@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1069</width>
-    <height>225</height>
+    <height>238</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -83,7 +83,11 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLineEdit" name="lineEdit_21"/>
+                 <widget class="QLineEdit" name="lineEdit_21">
+                  <property name="text">
+                   <string>64.4</string>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -183,14 +187,14 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton_19">
+              <widget class="QPushButton" name="small_calibration">
                <property name="text">
                 <string>小</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton_20">
+              <widget class="QPushButton" name="large_calibration">
                <property name="text">
                 <string>大</string>
                </property>
