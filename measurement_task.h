@@ -44,6 +44,8 @@ signals:
 
     void signal_profile_file(QString );
 
+    void signal_profile_filename(QString );
+
 private:
     Ui::measurement_task *ui;
 

@@ -89,7 +89,7 @@ void get_msxe3711_data::getMSXdata()
 
         std::ifstream ifs;							//创建流对象
 
-        ifs.open("C:\\Users\\gaohuan\\Desktop\\lunkuo.txt", std::ios::in);	//打开文件
+        ifs.open("C:\\Users\\gaohuan\\Desktop\\7200.txt", std::ios::in);	//打开文件
 
         if (!ifs.is_open())						//判断文件是否打开
         {

@@ -153,7 +153,14 @@
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <widget class="QSpinBox" name="spinBox"/>
+          <widget class="QSpinBox" name="spinBox">
+           <property name="maximum">
+            <number>2048</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+          </widget>
          </item>
          <item>
           <spacer name="horizontalSpacer_4">

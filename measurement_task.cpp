@@ -218,7 +218,7 @@ void measurement_task::on_pushButton_3_clicked()
 
         settings->setValue("Filter/FL9",file_settings->value("Filter/FL9").toString());
 
-        settings->setValue("Order/PartNumber",file_settings->value("Order/PartNumber").toString());
+        settings->setValue("Order/PartType",file_settings->value("Order/PartType").toString());
         settings->setValue("Order/PartName",file_settings->value("Order/PartName").toString());
         settings->setValue("Order/Number of pieces",file_settings->value("Order/Number of pieces").toString());
         settings->setValue("Order/Order",file_settings->value("Order/Order").toString());
@@ -307,6 +307,8 @@ void measurement_task::on_pushButton_3_clicked()
     if(item!=vec_str.end())
     {
         emit signal_profile_file(filename);
+
+        emit signal_profile_filename(filename);
     }
 
 

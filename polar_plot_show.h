@@ -100,8 +100,6 @@ public:
 
     void resultAreaAttributesShow();
 
-    void startToPrepare();
-
     void maindowThreadData(QVector<double> displacement_data,QVector<double> amplitude,QString range);
 
     void LeastSquaresCircle();
@@ -179,9 +177,9 @@ public slots:
 
     void recive_control_decimal_place(int);
 
-    void recive_show_x_barchart(int data);
+    void recive_show_x_barchart(QString ,int data);
 
-    void recive_show_y_barchart(QString data);
+    void recive_show_y_barchart(QString spectral_type_,QString data);
 
     void polar_diagram(QString range);
 
@@ -278,6 +276,8 @@ public:
 
     std::unique_ptr<controller> controller_qwt_=nullptr;
 
+    std::unique_ptr<chart> config_chart_=nullptr;
+
     QString range_;
 
     float small_calibration_=1.0;
@@ -293,6 +293,10 @@ public:
 
     double leastsquare_radius_of_circle_=0;
     double minimum_radius_of_outer_circle_=0;
+
+    QString spectrogram_type_="harmonic_wave";
+
+    int spectral_size_=0;
 };
 
 #endif // POLAR_PLOT_SHOW_H

@@ -8,9 +8,10 @@ chart::chart(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->spinBox->setValue(2048);  // 起始默认值
     ui->spinBox->setRange(8, 2048);
     ui->spinBox->setFocusPolicy(Qt::NoFocus);
-
+    spectral_type_="谐波";
 
 }
 
@@ -19,10 +20,16 @@ chart::~chart()
     delete ui;
 }
 
-
+void chart::show_spinbox_data()
+{
+     qDebug()<<"show_spinbox_data()spinbox_data_"<<spinbox_data_<<"\n";
+     ui->spinBox->setValue(spinbox_data_);  // 起始默认值
+}
 
 void chart::on_comboBox_2_currentIndexChanged(const QString &arg1)
 {
+    spectral_type_=arg1;
+
     if(arg1=="波纹度")
     {
         emit signal_show_type_of_spectrum("waviness");
@@ -47,7 +54,7 @@ void chart::on_spinBox_valueChanged(int arg1)
 
     int count =0;
 
-    emit signal_show_x(arg1);
+    emit signal_show_x(spectral_type_,arg1);
 
     if(count<12)
     {
@@ -60,5 +67,5 @@ void chart::on_spinBox_valueChanged(int arg1)
 void chart::on_comboBox_currentTextChanged(const QString &arg1)
 {
      qDebug()<<arg1;
-     emit signal_show_y(arg1);
+     emit signal_show_y(spectral_type_,arg1);
 }

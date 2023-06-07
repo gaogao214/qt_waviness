@@ -18,6 +18,7 @@
 #include "controller.h"
 
 
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -31,6 +32,8 @@ public:
     ~MainWindow();
 
 public:
+    void initprofile(QString );
+
     void initStatusBar();
 
     void initFunctionKey();
@@ -40,6 +43,8 @@ public:
     void finishedMeasurement();
 
     void windowTitle(QString title);
+
+    void updateTheListOfRecentlyOpenedFiles();
 
 private slots:
 
@@ -99,7 +104,9 @@ private slots:
 
     void calibrationMeasurement();
 
+    void on_action1_4_triggered();
 
+    void recive_measurement_task(QString);
 
 private:
 
@@ -137,6 +144,13 @@ private:
 public:
     QString transducer_name_;
     QString profile_fileName_;
+    QString windows_title_;
+
+    QVector<QString> history_filename_;
+
+    int maxFileNr=10;
+
+     QList<QAction*> recentFileActionList;
 
 };
 #endif // MAINWINDOW_H

@@ -61,7 +61,6 @@ PolarPlotShow::PolarPlotShow(QWidget *parent) :
     curveGraphMenu();
     histogramMenu();
 
-//    startToPrepare();
 
     QTimer *timer_calendar;
     timer_calendar=new QTimer(this);
@@ -252,7 +251,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
                 {
                     if(range_=="+-50μm")
                     {
-                        auto difference_of_radius_=(num_max_-num_min_)*small_calibration_/*-(fft_.tempPoint_.radius-num_min_)*/;
+                        auto difference_of_radius_=(num_max_-num_min_)*small_calibration_/*-(leastsquare_radius_of_circle_-num_min_)*/;
                         tab_config_.result=QString::number(difference_of_radius_,'f',3);
                         ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
 
@@ -281,7 +280,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
                 }
                 if(tab_config_.secondary_criteria=="fln1")
                 {
-                    auto difference_of_radius_=(num_max_-fft_.tempPoint_.radius)+(fft_.tempPoint_.radius-num_min_);
+                    auto difference_of_radius_=(num_max_-leastsquare_radius_of_circle_)+(leastsquare_radius_of_circle_-num_min_);
                     tab_config_.result=QString::number(difference_of_radius_,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
 
@@ -542,7 +541,7 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
 
                 if(tab_config_.secondary_criteria=="△r")
                 {
-                    auto difference_of_radius_=(max_-fft_.tempPoint_.radius)+(fft_.tempPoint_.radius-min_);
+                    auto difference_of_radius_=(max_-leastsquare_radius_of_circle_)+(leastsquare_radius_of_circle_-min_);
                     tab_config_.result=QString::number(difference_of_radius_,'f',3);
                     ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));//写入
                 }
@@ -569,11 +568,11 @@ void PolarPlotShow::theResultsWereCalculatedAccordingToThePrimaryAndSecondaryCri
                 {
                     for(int i=0;i<dft_data.size();i++)
                     {
-                        auto w=1.4142 * 3.1416 * (rotate_speed/60) * dft_data[i]*i ; //根号2 * pi * 转速/60 *谐波*波次amplitude_;
+                        auto w=/*1.4142 * 3.1416 * (rotate_speed/60) **/ dft_data[i]*i ; //根号2 * pi * 转速/60 *谐波*波次amplitude_;
                         auto pow_w=pow(w,2);
                         waviness_sum+=w;
                     }
-                   auto waviness_sqrt=sqrt(waviness_sum/dft_data.size());
+                   auto waviness_sqrt=1.4142 * 3.1416 * (rotate_speed/60) *sqrt(waviness_sum/dft_data.size());
 
                    tab_config_.result=QString::number(waviness_sqrt,'f',3);
                    ui->tableWidget->item(i,2)->setText(QString("%1").arg(tab_config_.result));
@@ -638,7 +637,13 @@ void PolarPlotShow::maindowThreadData(QVector<double> displacement_data,QVector<
 
     amplitude_=amplitude;//振幅
     fft_.gaussianBand(displacement_data);//高斯滤波
-
+//    auto nums=fft_.filterBand(0,displacement_data.size());
+//    fft_.gaussianBand(nums);//高斯滤波
+//    auto nums_=fft_.filterBand(0,nums.size());
+//    fft_.gaussianBand(nums_);//高斯滤波
+//    auto numsa_=fft_.filterBand(0,nums_.size());
+//    fft_.gaussianBand(numsa_);//高斯滤波
+//    auto numsas_=fft_.filterBand(0,numsa_.size());
 
     num_min_=*(std::min_element(displacement_data.begin(),displacement_data.end()));
     num_max_=*(std::max_element(displacement_data.begin(),displacement_data.end()));
@@ -747,13 +752,26 @@ void PolarPlotShow::polar_diagram(QString range)
     if(range=="+-50μm")
     {
          plot->setScale( QwtPolar::ScaleRadius, -50,50, 0.5);
+         plot->replot();
+
+
     }else if(range=="+-500μm")
     {
          plot->setScale( QwtPolar::ScaleRadius, -500,500, 0.5);
+         plot->replot();
+
     }
+    else if(range=="+-2000μm")
+    {
+        plot->setScale( QwtPolar::ScaleRadius, -2000,2000, 1);
+        plot->replot();
+
+     }
     else if(range=="")
     {
         plot->setScale( QwtPolar::ScaleRadius, -2,2, 0.5);
+        plot->replot();
+
      }
 
 
@@ -841,9 +859,6 @@ void PolarPlotShow::curveGraphShow(QVector<double> value)
     ui->qwtPlot->detachItems();
     ui->qwtPlot->replot();
 
-    /*setAxisScale四个参数的含义分别是：坐标轴->坐标轴最小值->坐标轴最大值->步进*/
-    //    ui->qwtPlot->setAxisScale(QwtPlot::xBottom,0,360,10);
-    //    ui->qwtPlot->setAxisScale(QwtPlot::yLeft,0,10,2);
     ui->qwtPlot->setTitle("线性曲线");
     //    /*添加网格*/
     QwtPlotGrid *grid = new QwtPlotGrid();
@@ -962,13 +977,6 @@ void PolarPlotShow::poleDiagramDisplay(QVector<double> value,QString range)
 
 }
 
-
-void PolarPlotShow::startToPrepare()
-{
-
-
-
-}
 
 void PolarPlotShow::LeastSquaresCircle()
 {
@@ -1347,15 +1355,22 @@ void PolarPlotShow::custplotPropertyShow()
 //图表属性
 void PolarPlotShow::custplotChartShow()
 {
-    chart *config_chart=new chart;
+//    chart *config_chart=new chart;
 
+    if(config_chart_==nullptr)
+    {
+        config_chart_=std::make_unique<chart>();
 
-    connect(config_chart, SIGNAL(signal_show_type_of_spectrum(QString)),this, SLOT(recive_show_type_of_spectrum(QString)));
-    connect(config_chart,SIGNAL(signal_show_x(int)),this,SLOT(recive_show_x_barchart(int)));
-    connect(config_chart,SIGNAL(signal_show_y(QString)),this,SLOT(recive_show_y_barchart(QString)));
+        connect(config_chart_.get(), SIGNAL(signal_show_type_of_spectrum(QString)),this, SLOT(recive_show_type_of_spectrum(QString)));
+        connect(config_chart_.get(),SIGNAL(signal_show_x(QString,int)),this,SLOT(recive_show_x_barchart(QString,int)));
+        connect(config_chart_.get(),SIGNAL(signal_show_y(QString,QString)),this,SLOT(recive_show_y_barchart(QString,QString)));
 
-    config_chart->setWindowModality(Qt::ApplicationModal);
-    config_chart->show();
+    }
+
+    config_chart_.get()->show_spinbox_data();
+
+    config_chart_.get()->setWindowModality(Qt::ApplicationModal);
+    config_chart_.get()->show();
 }
 
 
@@ -1419,64 +1434,115 @@ void PolarPlotShow::recive_display_time_speed(bool flag)
 
 void PolarPlotShow::recive_show_type_of_spectrum(QString type)
 {
+     spectrogram_type_=type;
     if(type=="waviness")
     {
-        //        ui->waviness->show();
-        //        ui->histogram_->hide();
+
         histogram_chart_.get()->hide();
         wavinessChart();
         waviness_chart_.get()->show();
 
-        //        ui->curve_graph_->hide();
+
         ui->qwtPlot->hide();
     }
     else if(type=="harmonic_wave")
     {
-        //        ui->waviness->hide();
-        //        ui->histogram_->show();
+
         waviness_chart_.get()->hide();
         histogram_chart_.get()->show();
-        //        ui->curve_graph_->hide();
+
         ui->qwtPlot->hide();
     }
     else if(type=="linearity_curve")
     {
-        //        ui->waviness->hide();
-        //        ui->histogram_->hide();
+
         waviness_chart_.get()->hide();
         histogram_chart_.get()->hide();
-        //        ui->curve_graph_->show();
+
         ui->qwtPlot->show();
 
     }
 }
 
-void PolarPlotShow::recive_show_x_barchart(int data)
+void PolarPlotShow::recive_show_x_barchart(QString spectral_type,int data)
 {
-    barChart();
+//    spectrogram_type_=spectral_type;
 
-    qDebug()<<data;
-    histogram_chart_->setAxisScale(QwtPlot::xBottom, 0, data);
+    qDebug()<<spectral_type<<"spectral_type:"<<data;
 
-    histogram_chart_->setAxisMaxMinor(QwtPlot::xBottom, 0);
-    histogram_chart_->setAxisScale(QwtPlot::yLeft, 0, 1);
+    spectral_size_=data;
 
-    histogram_chart_->replot();
+    config_chart_.get()->spinbox_data_=data;
 
+    if(spectral_type=="波纹度")
+    {
+        wavinessChart();//初始化波纹度
+
+        waviness_chart_->setAxisScale(QwtPlot::xBottom, 0, data);
+
+        waviness_chart_->setAxisMaxMinor(QwtPlot::xBottom, 0);
+        waviness_chart_->setAxisScale(QwtPlot::yLeft, 0, 1);
+
+        waviness_chart_->replot();
+
+    }
+    else if(spectral_type=="谐波")
+    {
+        barChart();//初始化谐波
+
+        histogram_chart_->setAxisScale(QwtPlot::xBottom, 0, data);
+
+        histogram_chart_->setAxisMaxMinor(QwtPlot::xBottom, 0);
+        histogram_chart_->setAxisScale(QwtPlot::yLeft, 0, 1);
+
+        histogram_chart_->replot();
+    }
+    else if(spectral_type=="线性曲线")
+    {
+        curveBightChart();//线性曲线初始化
+
+        ui->qwtPlot->setAxisScale(QwtPlot::xBottom, 0, data);
+
+        ui->qwtPlot->setAxisMaxMinor(QwtPlot::xBottom, 0);
+        ui->qwtPlot->setAxisScale(QwtPlot::yLeft, 0, 1);
+
+        ui->qwtPlot->replot();
+    }
 
 }
 
-void PolarPlotShow::recive_show_y_barchart(QString data)
+void PolarPlotShow::recive_show_y_barchart(QString spectral_type_,QString data)
 {
-    barChart();
 
-    qDebug()<<data;
+
+    qDebug()<<spectral_type_<<"spectral_type:"<<data;
 
     auto num=data.toFloat();
 
-    histogram_chart_->setAxisScale(QwtPlot::yLeft, 0, 1,num);
+    if(spectral_type_=="波纹度")
+    {
+        wavinessChart();//初始化波纹度
 
-    histogram_chart_->replot();
+        waviness_chart_->setAxisScale(QwtPlot::yLeft, 0, 1,num);
+        waviness_chart_->replot();
+
+    }
+    else if(spectral_type_=="谐波")
+    {
+        barChart();//初始化谐波
+
+        histogram_chart_->setAxisScale(QwtPlot::yLeft, 0, 1,num);
+
+        histogram_chart_->replot();
+    }
+    else if(spectral_type_=="线性曲线")
+    {
+        curveBightChart();//线性曲线初始化
+        ui->qwtPlot->setAxisScale(QwtPlot::yLeft, 0, 1,num);
+        ui->qwtPlot->replot();
+    }
+
+
 }
 
 //按钮显示柱状图
@@ -1488,9 +1554,6 @@ void PolarPlotShow::on_chart_pushButton_clicked()
     if(spectrogram_count_ ==0)
     {
         ui->graph_pushButton_2->setEnabled(true);
-        //        ui->histogram_->show();
-        //        ui->curve_graph_->hide();
-        //        ui->waviness->hide();
 
 
         histogram_chart_.get()->show();
@@ -1501,9 +1564,6 @@ void PolarPlotShow::on_chart_pushButton_clicked()
     }
     else if(spectrogram_count_ ==1)
     {
-        //        ui->curve_graph_->show();
-        //        ui->waviness->hide();
-        //        ui->histogram_->hide();
 
         waviness_chart_.get()->hide();
         histogram_chart_.get()->hide();
@@ -1513,11 +1573,6 @@ void PolarPlotShow::on_chart_pushButton_clicked()
     }
     else if(spectrogram_count_ ==2)
     {
-
-        //        ui->waviness->show();
-        //        ui->histogram_->hide();
-        //        ui->curve_graph_->hide();
-
         histogram_chart_.get()->hide();
         waviness_chart_.get()->show();
         ui->qwtPlot->hide();
@@ -1542,9 +1597,6 @@ void PolarPlotShow::on_graph_pushButton_2_clicked()
     if(spectrogram_count_ ==0)
     {
         ui->chart_pushButton->setEnabled(true);
-        //        ui->curve_graph_->show();
-        //        ui->histogram_->hide();
-        //        ui->waviness->hide();
 
         waviness_chart_.get()->hide();
         histogram_chart_.get()->hide();
@@ -1554,9 +1606,6 @@ void PolarPlotShow::on_graph_pushButton_2_clicked()
     }
     else if(spectrogram_count_==1)
     {
-        //        ui->histogram_->show();
-        //        ui->waviness->hide();
-        //        ui->curve_graph_->hide();
 
         histogram_chart_.get()->show();
         waviness_chart_.get()->hide();
@@ -1565,9 +1614,6 @@ void PolarPlotShow::on_graph_pushButton_2_clicked()
     }
     else if(spectrogram_count_==2)
     {
-        //        ui->waviness->show();
-        //        ui->histogram_->hide();
-        //        ui->curve_graph_->hide();
 
         histogram_chart_.get()->hide();
         waviness_chart_.get()->show();
@@ -1836,10 +1882,6 @@ void PolarPlotShow::show_time()
     /*QString str*/str_time_ = time.toString("yyyy.MM.dd hh:mm:ss dddd");
 
     ui->label_time_circle->setText(str_time_);
-    //    show_time_label_->setText(str);
-
-    //    ui->statusbar->addPermanentWidget(show_time_label_);
-    //    ui->statusbar->setSizeGripEnabled(true);
 
 }
 
@@ -1848,9 +1890,80 @@ void PolarPlotShow::show_time()
 void PolarPlotShow::on_pushButton_clicked()
 {
 
-    //    ui->histogram_->xAxis->setRangeLower(500);  //x  0-2000 改变 500-2000
+    //    ui->histogram_->xAxis->setRangeLower(500);  //x  0-2000 改变，一次加8
 
     //    ui->histogram_->replot();
+
+
+    qDebug()<<"on_pushButton_clicked:"<<spectrogram_type_;
+
+    if(spectrogram_type_=="waviness")
+    {
+        wavinessChart();//初始化波纹度
+        QwtInterval xtemp = waviness_chart_->axisScaleDiv(QwtPlot::xBottom).interval();
+        double xmax = xtemp.maxValue();
+        qDebug()<< "xmax = "<<xmax;
+        if(xmax==2048)
+        {
+
+        }
+        else if(xmax<2048)
+        {
+            waviness_chart_->setAxisScale(QwtPlot::xBottom, 0, xmax*2);
+
+            waviness_chart_->setAxisMaxMinor(QwtPlot::xBottom, 0);
+            waviness_chart_->setAxisScale(QwtPlot::yLeft, 0, 1);
+
+            waviness_chart_->replot();
+        }
+
+    }
+    else if(spectrogram_type_=="harmonic_wave")
+    {
+        barChart();//初始化谐波
+
+        QwtInterval xtemp = histogram_chart_->axisScaleDiv(QwtPlot::xBottom).interval();
+        double xmax = xtemp.maxValue();
+        qDebug()<< "xmax = "<<xmax;
+
+        if(xmax==2048)
+        {
+
+        }
+        else if(xmax<2048)
+        {
+            histogram_chart_->setAxisScale(QwtPlot::xBottom, 0, xmax*2);
+
+            histogram_chart_->setAxisMaxMinor(QwtPlot::xBottom, 0);
+            histogram_chart_->setAxisScale(QwtPlot::yLeft, 0, 1);
+
+            histogram_chart_->replot();
+        }
+
+
+    }
+    else if(spectrogram_type_=="linearity_curve")
+    {
+        curveBightChart();//线性曲线初始化
+
+        QwtInterval xtemp = ui->qwtPlot->axisScaleDiv(QwtPlot::xBottom).interval();
+        double xmax = xtemp.maxValue();
+        qDebug()<< "xmax = "<<xmax;
+
+        if(xmax>360)
+        {
+
+        }
+        else if(xmax<2048)
+        {
+            ui->qwtPlot->setAxisScale(QwtPlot::xBottom, 0, xmax*2);
+
+            ui->qwtPlot->setAxisMaxMinor(QwtPlot::xBottom, 0);
+            ui->qwtPlot->setAxisScale(QwtPlot::yLeft, 0, 1);
+
+            ui->qwtPlot->replot();
+        }
+    }
 
 }
 

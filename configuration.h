@@ -16,6 +16,7 @@ public:
     explicit configuration(QWidget *parent = nullptr);
     ~configuration();
 
+
 public slots:
     void open_mwa_profile(QString filename);
 
@@ -58,7 +59,7 @@ private:
     std::shared_ptr<formdoc> ptr_copy_=nullptr;
     std::shared_ptr<formdoc> formtable=nullptr;
 public:
-    QString configuration_filename_mwa_=nullptr;
+    QString configuration_filename_mwa_;
 
     QVector<table_config> tab_str;
     QVector<table_widget_band> tab_band_;

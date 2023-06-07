@@ -159,8 +159,9 @@ void configuration::on_confirm_pushButton_clicked()
 
     emit signal_recognition_config(rec_config);
 
-
     QSettings setting(configuration_filename_mwa_, QSettings::IniFormat);
+
+    qDebug()<<"on_confirm_pushButton_clicked()configuration_filename_mwa_:"<<configuration_filename_mwa_<<"\n";
 
     QString value_0=ui->tableWidget->item(0,0)->text()+","+ui->tableWidget->item(0,1)->text()
             +","+ui->tableWidget->item(0,2)->text();
@@ -202,8 +203,8 @@ void configuration::on_confirm_pushButton_clicked()
             +","+ui->tableWidget->item(9,2)->text();
     setting.setValue("Filter/FL9",value_9);
 
-    setting.setValue("Order/PartNumber"," ");
-    setting.setValue("Order/PartName"," ");
+    setting.setValue("Order/PartType",rec_config.part_type);
+    setting.setValue("Order/PartName",rec_config.attribute);
     setting.setValue("Order/Number of pieces",rec_config.amount);
     setting.setValue("Order/Order",rec_config.order);
     setting.setValue("Order/Customer",rec_config.client);
@@ -233,20 +234,9 @@ void configuration::on_confirm_pushButton_clicked()
 
     }
 
-
     setting.endGroup();
 
-
-
-
-
     setting.sync();//写入配置文件
-
-
-
-
-
-
 
     this->hide();
 }
@@ -295,7 +285,7 @@ void configuration::on_file_pushButton_clicked()
         QSettings *settings = new QSettings(/*"C://Users//gaohuan//Desktop//qt_waviness//01.mwa"*/filename_mwa_,QSettings::IniFormat);
         qDebug() << QCoreApplication::applicationDirPath();
 
-        settings->setValue("Order/PartNumber"," ");
+        settings->setValue("Order/PartType"," ");
         settings->setValue("Order/PartName"," ");
         settings->setValue("Order/Number of pieces"," ");
         settings->setValue("Order/Order"," ");
@@ -311,6 +301,10 @@ void configuration::on_file_pushButton_clicked()
 
 void configuration::open_mwa_profile(QString filename)
 {
+
+    configuration_filename_mwa_=filename;
+    qDebug()<<"open_mwa_profile()configuration_filename_mwa_:"<<configuration_filename_mwa_<<"\n";
+
     QVector<QString> vec_value;
     QSettings *settings = new QSettings(/*"C://Users//gaohuan//Desktop//qt_waviness//01.mwa"*/filename,QSettings::IniFormat);
 
@@ -358,7 +352,7 @@ void configuration::open_mwa_profile(QString filename)
     }
 
 
-    QString str=settings->value("Order/PartNumber").toString();
+    QString str=settings->value("Order/PartType").toString();
 
     str=settings->value("Order/PartName").toString();
 
@@ -444,3 +438,4 @@ void configuration::open_mwa_profile(QString filename)
 
 
 }
+

@@ -40,6 +40,10 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    windows_title_="DeepVision";
+
+    this->setWindowTitle(windows_title_);//设置窗口名
+
     qRegisterMetaType<struct modbus>("struct modbus");
 
     real_time_=std::make_unique<QTimer>(this);
@@ -85,6 +89,46 @@ void MainWindow::showTime()
 
     ui->statusbar->addPermanentWidget(show_time_label_.get());
     ui->statusbar->setSizeGripEnabled(true);
+
+}
+
+void MainWindow::initprofile(QString filePath)
+{
+
+    QSettings settings;
+    QStringList recentFilePaths = settings.value("recentFiles").toStringList();
+    recentFilePaths.removeAll(filePath);
+    recentFilePaths.prepend(filePath);
+    while (recentFilePaths.size() > maxFileNr)
+        recentFilePaths.removeLast();
+    settings.setValue("recentFiles", recentFilePaths);
+
+    // see note
+    updateTheListOfRecentlyOpenedFiles();
+
+
+}
+
+void MainWindow::updateTheListOfRecentlyOpenedFiles()
+{
+    QSettings settings;
+    QStringList recentFilePaths = settings.value("recentFiles").toStringList();
+
+    auto itEnd = 0;
+    if(recentFilePaths.size() <= maxFileNr)
+        itEnd = recentFilePaths.size();
+    else
+        itEnd = maxFileNr;
+
+    for (auto i = 0; i < itEnd; ++i) {
+        QString strippedName = QFileInfo(recentFilePaths.at(i)).fileName();
+        recentFileActionList.at(i)->setText(strippedName);
+        recentFileActionList.at(i)->setData(recentFilePaths.at(i));
+        recentFileActionList.at(i)->setVisible(true);
+    }
+
+    for (auto i = itEnd; i < maxFileNr; ++i)
+        recentFileActionList.at(i)->setVisible(false);
 
 }
 
@@ -200,6 +244,7 @@ void MainWindow::loadingMeasurement()
     delay_label_ = std::make_unique<QLabel>(delay_dialog_.get());
     delay_label_->setStyleSheet("background-color:transparent");
     delay_label_->resize(150, 150);
+
     delay_label_->setScaledContents(true);
 
     delay_movie_ = std::make_unique<QMovie>("C:/Users/gaohuan/Desktop/qt_waviness/qt_msx-e371x_modbus_qwt/images/waiting.gif");
@@ -306,9 +351,20 @@ void MainWindow::on_new_profile_triggered()
     profile_arguments::profile_order order_;
 
     filename_mwa_ = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Image"),
+                                                    tr("保存配置"),
                                                     "",
                                                     tr("*.mwa")); //选择路径
+    windows_title_+=" ("+filename_mwa_+")";
+    history_filename_.push_back(filename_mwa_);
+    QString profile_name="deepvision.ini";
+
+    QSettings *settings = new QSettings(profile_name,QSettings::IniFormat);
+
+    settings->setValue("HISTORY/file",filename_mwa_);
+
+
+    this->setWindowTitle(windows_title_);
+
     qDebug()<<filename_mwa_;
     if(filename_mwa_.isEmpty())
     {
@@ -359,7 +415,7 @@ void MainWindow::on_new_profile_triggered()
                 +","+QString::number(0);
         settings->setValue("Filter/FL9",value_9);
 
-        settings->setValue("Order/PartNumber"," ");
+        settings->setValue("Order/PartType"," ");
         settings->setValue("Order/PartName"," ");
         settings->setValue("Order/Number of pieces"," ");
         settings->setValue("Order/Order"," ");
@@ -393,7 +449,7 @@ void MainWindow::on_new_profile_triggered()
 
         QDir path; // 创建一个.mwa配置文件 同时创建一个同名的文件夹
 
-        auto num=filename_mwa_.size()-4;//获取路径名
+
         auto file=filename_mwa_.mid(0,filename_mwa_.size()-4);
 
         if (!path.exists(file)) {  // 使用QDir成员函数exists()来判断文件夹是否存在
@@ -408,6 +464,62 @@ void MainWindow::on_new_profile_triggered()
 
 }
 
+//新建-》另存为-》配置
+void MainWindow::on_save_as_configuration_triggered()
+{
+
+      QString newFilePath = QFileDialog::getSaveFileName(this,tr("另存为"),"","*.mwa"); //选择路径
+      qDebug()<<newFilePath;
+
+
+      QString filePath;
+      QStringList pathList=newFilePath.split("/");//用于检查新路径是否存在
+
+      QDir path; // 创建一个.mwa配置文件 同时创建一个同名的文件夹
+
+      auto file=filename_mwa_.mid(0,filename_mwa_.size()-4);
+
+      if (!path.exists(file)) {  // 使用QDir成员函数exists()来判断文件夹是否存在
+          path.mkdir(file);  // 使用mkdir来创建文件夹
+      }
+
+          QFile file_(profile_fileName_);
+          file_.copy(profile_fileName_,newFilePath);
+
+}
+
+//文件=》另存=》测量作业
+void MainWindow::on_action1_4_triggered()
+{
+    QString newFilePath = QFileDialog::getSaveFileName(this,tr("另存为"),"","*.job"); //选择路径
+    qDebug()<<newFilePath;
+
+
+      QString filePath;
+      QStringList pathList=newFilePath.split("/");//用于检查新路径是否存在
+
+      QDir path; // 创建一个.mwa配置文件 同时创建一个同名的文件夹
+
+      auto get_path=windows_title_.split("(");
+
+      auto name=get_path[1].split(")");
+
+
+      auto filename=name[0];
+
+      history_filename_.push_back(filename);
+      QString profile_name="deepvision.ini";
+
+      QSettings *settings = new QSettings(profile_name,QSettings::IniFormat);
+
+      settings->setValue("HISTORY/file",filename);
+
+      QFile file_(filename);
+      file_.copy(filename,newFilePath);//filename文件复制给newfilepath
+
+}
+
+
 //文件-》新建-》测量任务
 void MainWindow::on_measurement_task_triggered()
 {
@@ -416,12 +528,26 @@ void MainWindow::on_measurement_task_triggered()
     {
         config_task_=std::make_unique<measurement_task>();
         connect(config_task_.get(), SIGNAL(down_ok()), this, SLOT(configurePopover()));
+        connect(config_task_.get(),SIGNAL(signal_profile_filename(QString)),this,SLOT(recive_measurement_task(QString)));
         connect(config_task_.get(), SIGNAL(signal_profile_file(QString )), config_configure_.get(), SLOT(open_mwa_profile(QString)));
     }
 
     config_task_->setWindowModality(Qt::ApplicationModal);
     config_task_->show();
 
+}
+
+void MainWindow::recive_measurement_task(QString name)
+{
+    windows_title_+=" ("+name+")";
+    history_filename_.push_back(name);
+    QString profile_name="deepvision.ini";
+
+    QSettings *settings = new QSettings(profile_name,QSettings::IniFormat);
+
+    settings->setValue("HISTORY/file",name);
+
+    this->setWindowTitle(windows_title_);
 }
 
 //退出
@@ -439,6 +565,8 @@ void MainWindow::configurePopover()
     {
         config_configure_=std::make_unique<configuration>();
         config_configure_->configuration_filename_mwa_=filename_mwa_;
+
+        qDebug()<<"configurePopover()filename_mwa_"<<filename_mwa_<<"\n";
         config_configure_->setWindowModality(Qt::ApplicationModal); //顶层模态
         config_configure_->show();
 
@@ -448,7 +576,6 @@ void MainWindow::configurePopover()
     }
     else
     {
-        config_configure_->configuration_filename_mwa_=filename_mwa_;
         config_configure_->show();
     }
 
@@ -548,7 +675,7 @@ void MainWindow::comboBox_2_show(QString num)
 
 void MainWindow::on_comboBox_2_activated(const QString &arg1)
 {
-    qDebug()<<arg1;
+    qDebug()<<"on_comboBox_2_activated:"<<arg1<<"\n";
     config_polar_plot_->polar_diagram(arg1);
 }
 
@@ -569,7 +696,7 @@ void MainWindow::on_open_configuration_triggered()
 {
     profile_fileName_ = QFileDialog::getOpenFileName(
             this,
-            tr("open a file."),
+            tr("配置"),
             "D:/",
             tr("*mwa"));
         if (profile_fileName_.isEmpty()) {
@@ -582,6 +709,16 @@ void MainWindow::on_open_configuration_triggered()
             }
             config_configure_->open_mwa_profile(profile_fileName_);
         }
+
+        windows_title_+=" ("+profile_fileName_+")";
+        history_filename_.push_back(profile_fileName_);
+        QString profile_name="deepvision.ini";
+
+        QSettings *settings = new QSettings(profile_name,QSettings::IniFormat);
+
+        settings->setValue("HISTORY/file",filename_mwa_);
+
+        this->setWindowTitle(windows_title_);
 }
 
 //新建-》打开-》测量作业
@@ -592,41 +729,10 @@ void MainWindow::on_open_measurement_job_triggered()
         config_task_=std::make_unique<measurement_task>();
         connect(config_task_.get(), SIGNAL(down_ok()), this, SLOT(configurePopover()));
         connect(config_task_.get(), SIGNAL(signal_profile_file(QString )), config_configure_.get(), SLOT(open_mwa_profile(QString)));
+        connect(config_task_.get(),SIGNAL(signal_profile_filename(QString)),this,SLOT(recive_measurement_task(QString)));
     }
 
     config_task_->setWindowModality(Qt::ApplicationModal);
     config_task_->show();
 }
 
-//新建-》另存为-》配置
-void MainWindow::on_save_as_configuration_triggered()
-{
-
-    QString newFilePath = QFileDialog::getSaveFileName(this,tr("另存为"),"","*.mwa"); //选择路径
-    qDebug()<<newFilePath;
-
-
-      QString filePath;
-      QStringList pathList=newFilePath.split("/");//用于检查新路径是否存在
-      QString dir;
-      for(int i;i<pathList.size();i++)
-      {
-          if(i!=pathList.size()-1)
-          {
-              dir+=pathList[i];
-              dir+="/";
-          }
-      }
-      QDir path(dir);
-      if(path.exists())
-      {
-          QFile file(profile_fileName_);
-          file.copy(profile_fileName_,newFilePath);
-      }
-      else
-      {
-          path.mkdir(dir);//若路径不存在则创建不存在的文件夹
-          QFile file(profile_fileName_);
-          file.copy(profile_fileName_,newFilePath);
-      }
-}
